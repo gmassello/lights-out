@@ -101,13 +101,13 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 
 ### Esfuerzo medio
 
-21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. Verificar los flags contra nuestra versión de Jam.
+21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. **Ningún comando `jam plan`/`work`/`usage`/`agent create`/`chat` figura en las docs oficiales, la hacker guide ni el SDK**: verificarlos con `band --help` en la versión instalada antes de escribir el script.
 22. **Validador post-run.** Cruza `room.json` ↔ tasks ↔ commits: cada etapa cerrada tiene veredicto con SHA, cada SHA existe en el historial y cada rechazo tiene su reparación. Falla si queda algo huérfano.
-23. **Paquete de verificación final.** Clon público fresco → `harness check` → `harness run --all --mode isolated` → `evidence/verification-receipt.json` con comandos, exit codes y tiempos. `evidence/PACKAGING.json` con sha256, bytes y `exportedAt` de `room.json` y `"edited": false`. Audit de symlinks, gitlinks, `.git` anidado, credenciales en todo el historial y vocabulario del track en mandates.
+23. **Paquete de verificación final.** Clon público fresco → `harness check` → `harness run --all --mode isolated` → `evidence/verification-receipt.json` con comandos, exit codes y tiempos. `evidence/PACKAGING.json` con sha256, bytes y `exportedAt` de `room.json`, y `edited` en `false` solo si no hubo que redactar nada; si se redactó una credencial, se registra qué y dónde (redactar ya es editar). Audit de symlinks, gitlinks, `.git` anidado, credenciales en todo el historial y vocabulario del track en mandates.
 24. **Seat Spec Auditor** (opcional, suma un seat y costo). Solo lectura: matriz spec → código → check, busca faltantes y también extras no pedidos, firma por etapa y no por ítem para no llenar el room. El cierre de etapa requiere doble firma (verifier + auditor).
 25. **Ensayo general sobre el toy con criterios de aceptación de la fábrica.** Ruteo autónomo sin handles en el brief; al menos un rechazo que vuelve al builder (si no ocurre solo, se inyecta un bug a propósito); la fábrica sobrevive a un reinicio sin crear identidades nuevas; swim lanes grabables para el video.
 
-### Gotchas operativos de Jam (no están en las docs)
+### Gotchas operativos de Jam (no están en las docs; comandos sin verificar con `band --help`)
 
 - Una mención a un seat con el runtime parado es un no-op silencioso: `jam list` antes del dispatch es parte del preflight.
 - `room send` devuelve 404 hasta que el humano es participante del room.
@@ -115,6 +115,141 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 - El timeout de una aprobación humana hace auto-deny: en la corrida final no puede quedar ningún permiso en modo manual.
 - `jam plan set --snapshot` / `jam plan diagram` publican el plan en el room (re-ejecutar tras cada edición); `jam usage` da el consumo.
 - Pegar la spec completa en cada handoff (decenas de KB por mensaje) dispara compactaciones de contexto y mensajes cruzados entre etapas.
+- Los eventos `room_tasks` por WebSocket están detrás del flag `ff_room_tasks` y el SDK Python no los auto-une: nadie recibe push de cambios del board.
+- Codex arranca con `approval_mode="manual"`, y con `approval_timeout_decision="decline"` un timeout termina en rechazo.
+
+---
+
+## Contrato del runner (harness del evento)
+
+Leído de `harness/*.py` del repo oficial, sin abrir los tests de los tracks. Es formato, no contenido.
+
+### Lo que el servicio tiene que cumplir
+
+| Regla | Detalle |
+|---|---|
+| Puerto y bind | `0.0.0.0:8080`; el runner pasa **solo** `PORT=8080`. Un bind a `127.0.0.1` falla en los dos modos |
+| Health | `GET /health` → 200, JSON `{"status":"ok"}`, sano en **< 60 s** desde `docker run`. En modo aislado cada intento del health es un contenedor nuevo del runner, así que el margen real es menor: apuntar a ≤ 30 s |
+| Reset | `POST /_test/reset` → **204**, síncrono, < 10 s |
+| Sin red en runtime | Nada de instalar, migrar descargando ni recursos de CDN en la UI: el browser también corre en la red interna |
+| Sin config externa | Ninguna variable salvo `PORT`: todo con default dentro de la imagen |
+| Recursos | 2 vCPU / 2 GiB. Desde la etapa 2 corren **dos contenedores a la vez** (N y N-1, en la misma red) para probar upgrades: una etapa anterior que no levanta tumba a la siguiente |
+| Build | `docker build -f stage-N/Dockerfile stage-N/`, timeout 30 min. Nada de `COPY ../`, symlinks ni submódulos (`check` no los detecta) |
+| Timeouts | 5 s por request, 900 s por suite. Ráfagas de hasta 50 hilos liberados juntos: subir el backlog de escucha |
+| UI | Selectores solo por `data-testid`, 10 s por acción, contexto nuevo por test |
+| Errores | El helper compartido espera la forma `{"error":{"code","message"}}` |
+| Arquitectura | El jurado puede buildear en amd64: nada de binarios de arquitectura fija |
+
+### Cómo cuenta
+
+- `pass_rate` es el **promedio de la tasa de acierto por archivo de test**, no el total de checks. Una carpeta reclama su etapa si **cada** suite 1..N llega a 0,5.
+- Overshoot: si la carpeta ya reclama, corre la suite N+1 con `-x`; si pasa **completa**, `claimed_stage` queda en `None`.
+- Los jueces tienen un módulo `quality` (no incluido) que mide la **trayectoria de calidad entre etapas**: *erosion* y *verbosity*. El reviewer vigila que cada etapa extienda el código sin inflarlo.
+- No existe `harness export-room`: `room.json` se baja a mano de la console.
+
+### Lo que valida `harness check`
+
+- `README.md`, `FACTORY.md`, `stage-1/`; carpetas `stage-[1-4]` exactas; `Dockerfile` y `RUN.md` por carpeta; sin `.git` adentro.
+- `mandates/*.md` de primer nivel, ≥ 3. `Harness:` y `Model:` al inicio de línea (acepta `**Harness:**` o `- Model:`; falla en un heading, en una tabla o vacío). **No** compara contra el modelo real.
+- Vocabulario: tokeniza cada línea del mandate (rutas, snake_case, kebab-case) y falla con coincidencia **exacta** contra la lista del track. Términos genéricos como `/health`, `idempotency-key`, `data-testid` o `stage-1` no están.
+- `room.json`: objeto con `messages[]` y `scope` ausente o `"full"`. Seats = remitentes con `senderType` agent, ≥ 3 distintos por `senderId`. **Todo agente que habló necesita mandate** (slug de `senderName` sin no-alfanuméricos = nombre del archivo); dos seats con el mismo nombre visible colapsan en uno.
+- Reciprocidad: solo mensajes `text` de agentes con `@[[<senderId>]]` literal. Una mención dentro de un tool call no cuenta.
+- Credenciales en `.md .py .txt .json .yml .toml .env .js .ts .sh` y afines (no mira `.html .tsx .jsx .css`): `bearer <token>`, `sk-…`, `AKIA…`, `gh[pousr]_…`, `://user:pass@`, y `*KEY|TOKEN|SECRET|PASSWORD=` en archivos de config. Un `curl` con `Authorization: Bearer` en la salida de un tool dentro de `room.json` **hace fallar el check**.
+
+### Checks del paquete final (se suman al ítem 23)
+
+1. `harness check` y `harness run --all --mode isolated` sobre un clon fresco; ninguna carpeta en overshoot.
+2. Tiempo hasta `/health` sano por etapa en modo aislado (≤ 30 s).
+3. `docker run --network none -e PORT=8080` por etapa → `/health` 200.
+4. `POST /_test/reset` → 204 en < 10 s.
+5. Grep de binds a `127.0.0.1`/`localhost` en el código servido.
+6. `find . -type l`, `git submodule status`, `find stage-* -name .git`, `git ls-files -s | grep ^160000`: todo vacío.
+7. Scan de credenciales sobre `git log -p` completo, incluyendo `.html .tsx .css`.
+8. Ningún `._*` de macOS en el repo (rompen el build y el gate 1): `COPYFILE_DISABLE=1`, `._*` en `.dockerignore`, repo en disco interno, no en exFAT.
+
+---
+
+## Lecciones de una corrida real y de la guía de BAND
+
+Sacadas del `room.json` público de otra fábrica (3 seats, 4 etapas, 2.896 mensajes, 3 h 43 min), del ejemplo `examples/coding_agents` del SDK, del orquestador oficial `band-ai/codeband` y de la hacker guide (https://www.band.ai/hacker-guide).
+
+### Qué evalúa el jurado según BAND: el delete test
+
+"Take the room out of your design. Does the app still work? If it does, you've built a single-agent app with a chat log attached" — y "it's what hackathon judges look for". Hay que mostrar al menos una, idealmente dos o tres, de estas señales:
+
+- **Handoff dependiente**: el trabajo del segundo seat cambia por lo que encontró el primero, no por su texto pegado.
+- **Roster decidido en runtime**: el coordinador recluta según la necesidad.
+- **Un límite que BAND hace cumplir**: quién puede mencionar a quién.
+- **Un veredicto que puede bloquear**: la conclusión de un seat no sale porque otro dijo que no.
+
+No cuenta: mensajes de estado que nadie necesita leer, un proceso cambiando de persona, un orquestador propio llamando agentes por turno (el room queda como transcript de decisiones ya tomadas), un dashboard como entregable.
+
+La presentación responde cuatro preguntas: el equipo; quién le habla a quién, **incluido a quién se dejó afuera de una mención y por qué**; un flujo típico de punta a punta; y qué se rompe sin el room. La línea de flujo con flechas se escribe antes de grabar la demo.
+
+### Qué llega realmente en `room.json`
+
+- Llegan `text` (completos), `tool_call` (args cortados a ~4,3 KB), `tool_result` (salida cortada a ~4 KB), `thought` (completos) y eventos del runtime (turnos, compactaciones, respawns). `metadata.deliveryStatus` trae `deliveredAt`/`processedAt` por destinatario: mide la latencia real de cada handoff.
+- **No llegan** tokens ni usage, `attention`, memoria ni el estado del task board.
+- Por eso: al cerrar cada etapa, el coordinador publica un `text` con el uso medido y la tabla de tareas `#N from→to SHA`. Cada corrida de checks imprime primero una línea resumen (pasados, fallados, SHA, segundos) y el veredicto la copia textual.
+- Los thoughts se leen: idioma fijo (inglés) y que digan qué se va a verificar.
+
+### Reglas para los mandates
+
+1. **Plantilla por rol**: Own / Do not / Use / Ask a person / Done means. Incluye "no afirmar que los tests pasan sin haberlos corrido".
+2. **Bloque anti-loop**: mencionar es llamar a una función; los acks van sin `@`; silencio después de un handoff; nada de "ready and waiting" o "standing by"; nombrar sin `@` a quien no tiene que actuar.
+3. **Un turno por unidad de trabajo**: mandar el handoff y cerrar el turno; nunca seguir con la etapa siguiente en el mismo turno. Un seat publica su respuesta recién al cerrar el turno: turnos de 1–2 h produjeron respuestas con hasta 72 min de atraso, un handoff cruzado y una reparación delegada dos veces.
+4. **Handoffs sin esperar respuesta**: un envío que bloquea esperando contestación, con un trabajo de más de 10 min del otro lado, dejó a un coordinador 74 min parado con 6 timeouts.
+5. **Cada mensaje dice a qué estado responde** (`re: <SHA> etapa N`); el receptor descarta en silencio lo anterior al último veredicto que conoce.
+6. **Antes de pedir un handoff, mirar el board**: el handoff se registra también como transición de la tarea con el SHA.
+7. **Un solo dueño de la reparación**: el REJECT va del reviewer al builder y el coordinador no re-delega.
+8. **El coordinador no reenvía contenido**: el emisor le habla directo al destinatario. Antes de pasar un reporte, el coordinador lo verifica con un comando.
+9. **Archivos con un solo dueño** (`notes/plan.md` del planner, `notes/review.md` del reviewer): el chat lleva el veredicto y la ruta. Complementa la regla de handoffs autocontenidos: lo que el receptor necesita va en el mensaje, el detalle largo en el archivo.
+10. **`task_key`** kebab-case (≤ 32 caracteres) en cada mensaje, branch y commit.
+11. **Tope de 5 rondas de review por ítem**; el coordinador interviene antes si se repite el mismo fallo.
+12. **Regla de evidencia del crítico**: una afirmación sin un hallazgo publicado en el room recibe `BLOCKED` con la evidencia faltante; para el coordinador un `BLOCKED` es terminal hasta resolverse. Vara: "¿bloquearía este merge?".
+13. **Veredicto `INSUFFICIENT_EVIDENCE`** separado de REJECT: separa "producto mal" de "evidencia incompleta".
+14. **Un candidato corregido es nuevo**: no hereda la aceptación; se re-corren primero las pruebas que fallaron y después la regresión.
+15. **El verifier pierde autoridad si edita producción**, y arranca siempre del commit declarado, nunca de un workspace sin commitear. Registra limitaciones aunque acepte.
+16. **El breaker entrega la lista de lo que no probó** y rechaza si el éxito depende de estado del entorno no declarado.
+17. **Prioridad de cola del coordinador**: falla bloqueante → candidato esperando verificación → aclaración → snapshot → siguiente etapa → pulido.
+18. **Guard de branch antes de editar**: branch correcto, `HEAD` esperado y `git status --short` limpio; si no, escalar con el estado concreto, nunca con un "I stopped" genérico.
+19. **Mandates congelados**: solo se revisan por un defecto genérico de la fábrica, nunca por la tarea, y cada revisión queda registrada.
+20. **Auto-test de genericidad por oración** ("¿tiene sentido para un editor de documentos o una cola de mensajes?") más una lista de huellas prohibidas: sustantivos de dominio y umbrales numéricos.
+21. **No comprimir texto para que entre** (borrar espacios lo vuelve ilegible): si es largo, se parte.
+
+### Verificación que atrapa lo que las suites no ven
+
+- En la corrida analizada, **4 de los 5 rechazos salieron de pruebas de caja negra del coordinador**, mientras las suites propias del reviewer (75 grupos, 2.585 llamadas) y las oficiales (120/120) daban verde. Se formaliza: el coordinador prueba casos extremos mientras el reviewer revisa, y el reviewer reproduce cada uno antes de rechazar.
+- Categorías que se escaparon y van al checklist adversarial: profundidad y tamaño de input, IDs opacos con caracteres codificados (`%2F`), textos largos sin espacios a 375 px, UI que queda vieja después de un cambio del servidor, persistencia tras reiniciar el contenedor.
+- La review es el cuello de botella (4–19 min contra 3–4 min de reparación): FACTORY.md reporta latencia handoff → veredicto y rechazo → reparación, sacada de `deliveryStatus`.
+
+### Operación
+
+- **Un solo dispatch con las 4 etapas**; un segundo mensaje humano entre etapas cuenta como intervención.
+- **Preflight del seat**: herramientas verificadas (`rg` faltaba en los 3 seats), hoja de comandos del CLI en el brief (hubo 7 `--help` y 7 greps fallidos buscando subcomandos), MCP no usados desactivados (11 fallas por respawn) y nada de `sleep` como espera (108 eventos de ruido).
+- **Freeze antes del dispatch**: tabla PASS/BLOCKED con los hashes SHA-256 de cada mandate y del brief; un valor sin verificar bloquea el dispatch.
+- **Matriz de capacidades por seat** en FACTORY.md: quién escribe producción, quién acepta, quién habla con quién.
+- **Evidence index**: criterio → etapa → comando → archivo → PASS/FAIL, para que el jurado no lea logs.
+- **Handoff con `evidence[{path, sha256}]` y `assumptions`** (extiende el ítem 15).
+- **Roles forzados por permisos, no solo por prompt**: escritura limitada por path (el reviewer escribe solo en tests y evidencia).
+- **Descripción del seat con tokens** `role=<rol> harness=<…>` para reclutar con `band_lookup_peers` por rol.
+
+### Esfuerzo medio
+
+- **Watchdog determinista sin LLM**: consulta REST, umbral de inactividad por rol, un nudge y una escalada, sin volver a molestar a un seat que confirmó estar vivo. Pasa la espera acotada del ítem 9 de prompt a código.
+- **Worktree por seat sobre un clon compartido**: reviewer y planner en detached HEAD de solo lectura, builder en su branch. El veredicto queda atado al SHA por construcción.
+- **Máquina de estados por etapa** (`active / paused / human_owned / closed`), anunciada al room; cada seat la consulta antes de actuar.
+- **Sobre de protocolo con id de correlación** (`protocol code_review cid cr_<n>_r<round> state … from X to Y`) como evento del room o JSONL append-only: insumo del validador del ítem 22.
+- **Índice de contexto del repo** (`structure/patterns/dependencies.md`) regenerado solo si cambia HEAD e inyectado en el prompt: menos exploración por seat.
+- **`TASK.md` + `.state.json` por seat** para rearmar contexto tras un reinicio (git log + cambios sin commitear + tarea).
+- **Ledger de ids de agentes creados** (`.agent_ids.txt`) y rechazo a sobrescribir la config sin `FORCE=1` en el script de lanzamiento.
+- **Seat breaker en otro proveedor vía SDK** para diversidad real de modelo. Riesgo: confirmar en el toy que aparece en el roster y en `room.json`, y que su modelo coincide con el `Model:` del mandate.
+
+### Descartado
+
+- Pasos humanos durante la corrida (aclaraciones, QA humano realimentado, pedidos de pulido): es steering.
+- Meter diseño o valores de prueba en el brief: el brief es la spec oficial y nada más.
+- Reglas de fuentes no oficiales (licencia cerrada obligatoria).
 
 ---
 
