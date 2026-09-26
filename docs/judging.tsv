@@ -1,0 +1,4 @@
+# criterion	weight	regex (how a project page covering it would say it)
+Factory	50%	factory|mandates?|generic|reusable|FACTORY\.md|stages? [1-4]|spec|cost|tokens?|recover|catch(es)? bad
+App	25%	\bUI\b|interface|responsive|screens?|frontend|presentation-ready|maintainab
+Agent Teamwork	25%	seats?|room|handoffs?|review(er)?|autonom|collaborat|@handle|without (human|you)
