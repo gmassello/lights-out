@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lights-out design preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("lo-theme"); } catch (e) {}
+    if (!t) t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d0c0b;
+  --surface-1: #151412;
+  --surface-2: #1c1a18;
+  --surface-3: #24221f;
+  --border: #2e2b27;
+  --border-strong: #756d62;
+  --fg: #f5f2ee;
+  --fg-muted: #c9c3bb;
+  --fg-subtle: #9a938a;
+  --accent: #f2a33a;
+  --accent-hover: #f7b85e;
+  --on-accent: #1a1206;
+  --ring: #f2a33a;
+  --success: #4cc38a;
+  --danger: #f07167;
+  --pending: #9db4ff;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-24: 96px;
+  --shadow-overlay: 0 20px 60px rgb(0 0 0 / 0.55), 0 0 0 1px var(--border);
+  --glow-accent: 0 0 0 1px var(--accent), 0 0 18px rgb(242 163 58 / 0.28);
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #faf8f5;
+  --surface-1: #ffffff;
+  --surface-2: #f3f0eb;
+  --surface-3: #ebe7e0;
+  --border: #e2ddd5;
+  --border-strong: #9c9488;
+  --fg: #1b1916;
+  --fg-muted: #4a453f;
+  --fg-subtle: #6b645b;
+  --accent: #a4560b;
+  --accent-hover: #8a4708;
+  --on-accent: #ffffff;
+  --ring: #a4560b;
+  --success: #1c7547;
+  --danger: #b3261e;
+  --pending: #3552b8;
+  --shadow-overlay: 0 20px 60px rgb(27 25 22 / 0.18), 0 0 0 1px var(--border);
+  --glow-accent: 0 0 0 1px var(--accent), 0 0 14px rgb(164 86 11 / 0.22);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1rem/1.5 var(--font-sans); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); }
+@media (min-width: 768px) { .wrap { padding: 0 var(--space-8); } }
+nav { height: 56px; border-bottom: 1px solid var(--border); }
+nav .wrap { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.mark { white-space: nowrap; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: var(--space-2); }
+.pilot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--accent); box-shadow: var(--glow-accent); }
+section { padding: var(--space-12) 0; border-bottom: 1px solid var(--border); }
+.eyebrow { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--fg-subtle); margin: 0 0 var(--space-3); }
+h1 { font-size: 2.5rem; font-weight: 600; line-height: 1.1; letter-spacing: -0.025em; margin: 0 0 var(--space-3); }
+h2 { font-size: 1.75rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--space-3); }
+h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0 0 var(--space-2); }
+@media (max-width: 480px) { h1 { font-size: 1.75rem; } }
+.lead { font-size: 1.125rem; color: var(--fg-muted); margin: 0; max-width: 60ch; }
+.mono { font-family: var(--font-mono); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.muted { color: var(--fg-muted); } .subtle { color: var(--fg-subtle); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+.sw { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-1); }
+.sw i { display: block; height: 48px; border-bottom: 1px solid var(--border); }
+.sw span { display: block; padding: var(--space-2) var(--space-3); font: 400 0.75rem/1.4 var(--font-mono); color: var(--fg-muted); overflow-wrap: anywhere; }
+.grid2 { display: grid; gap: var(--space-6); }
+@media (min-width: 768px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); min-width: 0; }
+.btn { font: 500 0.875rem/1.2 var(--font-sans); min-height: 44px; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); border: 1px solid transparent; cursor: pointer; transition: background-color 150ms, color 150ms; }
+.btn:focus-visible, input:focus-visible, select:focus-visible, .slot:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--surface-1); color: var(--fg); border-color: var(--border-strong); }
+.btn-secondary:hover { background: var(--surface-2); }
+.btn-ghost { background: transparent; color: var(--fg-muted); }
+.btn-ghost:hover { color: var(--fg); }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; }
+.field { display: flex; flex-direction: column; gap: var(--space-1); flex: 1 1 160px; min-width: 0; }
+label { font-size: 0.875rem; color: var(--fg-muted); }
+input, select { font: 400 1rem/1.5 var(--font-sans); color: var(--fg); background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius-md); min-height: 44px; padding: var(--space-2) var(--space-3); width: 100%; }
+.err input { border-color: var(--danger); }
+.errmsg { font-size: 0.875rem; color: var(--danger); }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: var(--space-2); margin-top: var(--space-4); }
+.slot { text-align: left; border-radius: var(--radius-md); padding: var(--space-3); min-height: 64px; font: inherit; cursor: pointer; background: var(--surface-2); color: var(--fg); border: 1px solid var(--border-strong); transition: background-color 150ms; }
+.slot .t { display: block; font: 500 0.875rem/1.4 var(--font-mono); font-variant-numeric: tabular-nums; }
+.slot .s { display: block; font-size: 0.75rem; color: var(--fg-muted); overflow-wrap: anywhere; }
+.slot.off { background: var(--bg); color: var(--fg-subtle); border-style: dashed; border-color: var(--border); cursor: not-allowed; }
+.slot.off .t { text-decoration: line-through; }
+.slot.sel { background: var(--accent); color: var(--on-accent); border-color: var(--accent); box-shadow: var(--glow-accent); }
+.slot.sel .s { color: var(--on-accent); }
+.slot.skel { background: var(--surface-2); border-color: var(--border); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+.slots.lit .slot { animation: lit 260ms ease-out both; }
+@keyframes lit { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.badge { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 0.75rem; font-weight: 500; border-radius: var(--radius-pill); padding: 2px var(--space-2); border: 1px solid currentColor; }
+.ok { color: var(--success); } .no { color: var(--danger); } .wait { color: var(--pending); }
+.banner { display: flex; gap: var(--space-3); align-items: flex-start; background: var(--surface-1); border: 1px solid currentColor; border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: var(--space-3); }
+.banner.wait { border-style: dashed; }
+.banner b { display: block; color: var(--fg); font-weight: 600; }
+.banner span { color: var(--fg-muted); font-size: 0.875rem; }
+.ref { font: 500 1.75rem/1.2 var(--font-mono); display: inline-block; white-space: nowrap; overflow: hidden; vertical-align: bottom; }
+.ref.typing { width: 0; animation: type 420ms steps(12, end) forwards; }
+@keyframes type { to { width: 12ch; } }
+.cursor { display: inline-block; width: 0.6em; height: 1.4rem; background: var(--accent); margin-left: 2px; vertical-align: -2px; animation: blink 0.5s steps(1) 420ms 4 forwards; opacity: 0; }
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 0; } }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-6); margin: var(--space-4) 0 0; }
+dt { color: var(--fg-subtle); font-size: 0.875rem; } dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { dl { grid-template-columns: 1fr; gap: 0; } dd { margin-bottom: var(--space-2); } }
+.types > * + * { margin-top: var(--space-4); }
+@media (max-width: 480px) { .who { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .ref.typing { width: auto; }
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="mark"><span class="pilot" aria-hidden="true"></span>Lights-out</div>
+    <div class="row" style="align-items:center">
+      <span class="subtle who" style="font-size:.875rem">Signed in as <span class="muted">Ana Ruiz</span></span>
+      <button class="btn btn-secondary" id="theme" type="button" aria-label="Switch theme">◐ Theme</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Design system · tablekeeper</p>
+      <h1>Warm light in a dark factory</h1>
+      <p class="lead">Precise dark surfaces, hairline borders and one amber pilot-light accent. Monospace for everything a machine produced: times, references, counts.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Tokens</p>
+      <div class="swatches" id="swatches"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap grid2">
+      <div class="types">
+        <p class="eyebrow">Type scale</p>
+        <h2>Find a table tonight</h2>
+        <h3>Combined seating for larger parties</h3>
+        <p class="muted" style="margin:0">Pick a time and we'll hold the table while you confirm. Approved pairs of tables appear as a single option, never as two separate ids.</p>
+        <p class="mono subtle" style="margin:0">19:30 · party 6 · ref TK-7Q4M-2HX9</p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Controls</p>
+        <div class="row">
+          <div class="field"><label for="r">Restaurant</label><select id="r"><option>Casa Figueroa</option><option>Pilot Light Bistro</option></select></div>
+          <div class="field"><label for="p">Party size</label><input id="p" type="number" value="6" min="1"></div>
+        </div>
+        <div class="field err" style="margin-top:var(--space-3)"><label for="e">Email</label><input id="e" type="email" value="ana@" aria-describedby="e-err" aria-invalid="true"><span class="errmsg" id="e-err">Enter a full email address.</span></div>
+        <div class="row" style="margin-top:var(--space-4)">
+          <button class="btn btn-primary" type="button" id="search">Search availability</button>
+          <button class="btn btn-secondary" type="button">Look up a booking</button>
+          <button class="btn btn-ghost" type="button">Clear</button>
+          <button class="btn btn-primary" type="button" disabled>Booking…</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap grid2">
+      <div class="card">
+        <p class="eyebrow">Effect 1 · lights on</p>
+        <h3>Casa Figueroa · Fri 2 Oct</h3>
+        <p class="muted" style="margin:0;font-size:.875rem">Available, unavailable, selected and loading differ by fill, border style, strike-through and icon, not only colour.</p>
+        <div class="slots" id="slots" role="group" aria-label="Available times"></div>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Effect 2 · typed reference</p>
+        <div class="banner ok" role="status"><span aria-hidden="true">✓</span><div><b>Table booked</b><span>We saved your table. Keep this reference.</span></div></div>
+        <span class="ref typing" id="ref">TK-7Q4M-2HX9</span><span class="cursor" aria-hidden="true"></span>
+        <dl>
+          <dt>Restaurant</dt><dd>Casa Figueroa</dd>
+          <dt>When</dt><dd class="mono">Fri 2 Oct · 19:30</dd>
+          <dt>Party</dt><dd class="mono">6</dd>
+          <dt>Seating</dt><dd>Window 4 + Window 5 <span class="badge subtle">combined</span></dd>
+        </dl>
+        <div style="margin-top:var(--space-4);display:flex;gap:var(--space-2);flex-wrap:wrap">
+          <span class="badge ok">✓ Confirmed</span><span class="badge no">✕ Refused</span><span class="badge wait">… Uncertain</span>
+        </div>
+        <div class="banner no" style="margin-top:var(--space-4)"><span aria-hidden="true">✕</span><div><b>That time was just taken</b><span>Someone booked it a moment ago. Pick another time below.</span></div></div>
+        <div class="banner wait"><span aria-hidden="true">…</span><div><b>We couldn't confirm yet</b><span>Checking whether your booking went through — don't submit again.</span></div></div>
+        <button class="btn btn-secondary" type="button" id="replay">Replay effects</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  var TOKENS = ["--bg","--surface-1","--surface-2","--surface-3","--border","--border-strong","--fg","--fg-muted","--fg-subtle","--accent","--accent-hover","--on-accent","--ring","--success","--danger","--pending"];
+  var sw = document.getElementById("swatches");
+  TOKENS.forEach(function (t) {
+    var d = document.createElement("div"); d.className = "sw";
+    var i = document.createElement("i"); i.style.background = "var(" + t + ")";
+    var s = document.createElement("span"); s.textContent = t;
+    d.appendChild(i); d.appendChild(s); sw.appendChild(d);
+  });
+
+  var SLOTS = [
+    ["18:00","Table 2 · seats 2",""],["18:30","Window 4 · seats 4",""],["19:00","Terrace 1 · seats 4","off"],
+    ["19:30","Window 4 + Window 5 · seats 6","sel"],["20:00","Booth 3 · seats 6",""],["20:30","Chef's counter · seats 2","off"],
+    ["21:00","Table 7 · seats 4",""],["21:30","Garden alcove · seats 8",""]
+  ];
+  var grid = document.getElementById("slots");
+  function skeleton() {
+    grid.className = "slots"; grid.innerHTML = "";
+    for (var k = 0; k < 8; k++) { var b = document.createElement("div"); b.className = "slot skel"; b.setAttribute("aria-hidden", "true"); grid.appendChild(b); }
+  }
+  function light() {
+    grid.innerHTML = ""; grid.className = "slots lit";
+    SLOTS.forEach(function (x, n) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "slot " + x[2];
+      b.style.animationDelay = Math.min(n * 20, 300) + "ms";
+      if (x[2] === "off") b.setAttribute("aria-disabled", "true");
+      if (x[2] === "sel") b.setAttribute("aria-pressed", "true");
+      b.innerHTML = '<span class="t">' + (x[2] === "sel" ? "✓ " : "") + x[0] + '</span><span class="s">' + x[1] + "</span>";
+      grid.appendChild(b);
+    });
+  }
+  function run() {
+    skeleton(); setTimeout(light, 700);
+    var r = document.getElementById("ref"), c = r.nextElementSibling;
+    r.classList.remove("typing"); c.style.animation = "none"; void r.offsetWidth; c.style.animation = "";
+    r.classList.add("typing");
+  }
+  run();
+  document.getElementById("replay").addEventListener("click", run);
+  document.getElementById("search").addEventListener("click", run);
+  document.getElementById("theme").addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("lo-theme", next); } catch (e) {}
+  });
+</script>
+</body>
+</html>

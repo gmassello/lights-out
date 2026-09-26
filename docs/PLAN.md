@@ -248,8 +248,54 @@ La presentación responde cuatro preguntas: el equipo; quién le habla a quién,
 ### Descartado
 
 - Pasos humanos durante la corrida (aclaraciones, QA humano realimentado, pedidos de pulido): es steering.
-- Meter diseño o valores de prueba en el brief: el brief es la spec oficial y nada más.
+- Meter arquitectura o valores de prueba en el brief: el brief es la spec oficial más `docs/DESIGN.md`. El design system es la única excepción, decidida el 26 sep, y se declara en `FACTORY.md` como insumo del dispatch.
 - Reglas de fuentes no oficiales (licencia cerrada obligatoria).
+
+---
+
+## Entrega en lablab: lo que premian los jurados
+
+Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band of Agents Hackathon** (jun 2026, mismo sponsor, 391 proyectos). Cada página de proyecto trae `eventPosition` y las reviews de los jueces son públicas, con puntaje por criterio y a veces con comentario.
+
+### Qué separa a los ganadores
+
+- **El mecanismo, no la etiqueta.** Los jueces de BAND castigan nombrarlo en los tags sin mostrar la coordinación ("unclear how Band is used", 10/20) y premian una frase explícita del tipo "Remove Band and the chain collapses" ("exactly how Band should be used"). Es el delete test.
+- **Un agente que objeta a otro**: disenso, veto, red team, observer que se corrige, gate humano. Un pipeline fijo de roles (PM → Architect → QA) les pareció poco ("competes with model progress").
+- **Números verificables**: antes/después de tiempo, cantidad de tests, agentes × frameworks, hashes o `jsonl` de auditoría. Cada cifra rastreable en el repo; lo inferido se rotula "inferred".
+- **"Nothing is mocked"** con la fuente de cada dato.
+- **Diagrama de arquitectura** en deck y README: un 1° puesto perdió puntos de presentación por no tenerlo.
+- **Commits repartidos en la ventana del evento** (ganadores: 93, 39, 28). "An empty repo with one final push raises red flags".
+- **UI cuidada**: aparece explícita en los comentarios ("Great UI", "user persona and journeys are well explained").
+- Lo que resta: long description vacía o genérica, video incompleto, deck de 4 slides "too limited", error en vivo durante la demo.
+
+### Ficha
+
+- **Título** (≤ 50): nombre + promesa después de dos puntos o raya ("<Nombre>: <qué hace la fábrica>").
+- **Short** (230–255): una escena y un resultado, no la tecnología. Por ejemplo: entra una spec, un seat la entrega a otro, otro la rechaza, sale un servicio verificado.
+- **Long** (~1800 de 2000), en cuatro bloques: problema con una cifra dura → la fábrica paso a paso con los seats → qué no está simulado → por qué sin BAND se cae.
+- Los ganadores usan casi todo el límite de cada campo.
+
+### Video
+
+- **3 a 4:30 min**: la rúbrica de lablab baja la presentación por debajo de 3 min, y más de 5 no suma (mediana de ganadores ~4 min, rango 95–326 s).
+- Estructura: problema en 30 s → room de BAND con los seats en vivo → el handoff marcado en pantalla → el rechazo que cambió el resultado → el servicio funcionando → costo, falla atrapada y etapa alcanzada.
+- "Judges reward clarity over production value." La mayor parte del tiempo, el producto funcionando.
+
+### Deck
+
+- **8–10 slides**, 2–3 oraciones por slide, mucho diagrama.
+- Arco: claim → problema con cifra → diseño de la fábrica (diagrama de seats y handoffs) → los seats y sus modelos → la falla atrapada con el disenso textual → costo medido → "sin mocks" → por qué BAND → outcome con links a GitHub y al video.
+
+### README
+
+- Diagrama mermaid de la fábrica, elenco de seats, cómo correrlo, cómo reproducir una etapa.
+- Sección **"How it maps to the judging criteria"**: Factory 50%, App 25%, Agent Teamwork 25%, cada uno con su evidencia.
+
+### Fuentes
+
+- Rúbrica de lablab (1 a 5 por criterio): https://lablab.ai/hackathon-rules
+- https://lablab.ai/delivering-your-hackathon-solution: el video arranca con una introducción, pasa por el PDF y después muestra el producto.
+- https://lablab.ai/guide/how-to-win-an-ai-hackathon
 
 ---
 
