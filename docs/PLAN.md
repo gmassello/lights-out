@@ -72,6 +72,52 @@ Relevado de las 190 páginas de https://docs.band.ai (índice `llms.txt`) el 26 
 
 ---
 
+## Diseño de la fábrica: ideas a adoptar
+
+Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates o `FACTORY.md`. Nada de esto se copia como código: los mandates siguen genéricos y lo del track va en el brief.
+
+### Esfuerzo bajo (mandates y FACTORY.md)
+
+1. **Aceptación antes que código.** El reviewer escribe y commitea su diseño de aceptación (sección de la spec → casos) antes de leer la implementación. Sus checks salen de la spec, nunca del código ni de los tests del builder.
+2. **Checklist de conformidad numerado `[C-nn]`.** Cada ítem atado a una sección de la spec y a un check. Veredicto por ítem: CONFORMS con `archivo:línea` o DEVIATES con esperado vs. actual. Un solo desvío rechaza el handoff. Las ambigüedades se marcan y van al coordinador.
+3. **Evidencia de recuperación.** Tabla en `FACTORY.md`: hallazgo → quién lo encontró → SHA rechazado → SHA de la reparación. Cada rechazo se preserva en `evidence/stage-N/rejection-NN.md` con pasos, esperado, actual y pasaje de la spec. Los errores de tooling o de test se registran aparte y no cuentan como defectos del producto.
+4. **Veredicto atado a SHA + tree hash.** Todo ACCEPT/REJECT cita `<sha>` y el tree hash de la carpeta (`git rev-parse HEAD:stage-N`). El reviewer verifica que los tree hash de las etapas anteriores no cambiaron.
+5. **Release check.** Antes de aprobar una etapa: checkout limpio, build del contenedor, suites 1..N verdes y la suite N+1 **tiene que fallar**. Después se congela la carpeta.
+6. **Diversidad de modelo como regla.** El verifier nunca corre el mismo modelo que el builder: dos instancias del mismo modelo se equivocan en lo mismo. Escrito como restricción en `FACTORY.md`, no como descripción.
+7. **Grafo de ruteo restringido.** El builder no menciona al auditor ni al humano; solo el coordinador habla con el humano; nadie tiene camino hacia su propia aprobación. `FACTORY.md` suma la sección "qué se rompe sin el room".
+8. **Ruteo por rol, no por handle.** Cada seat consulta los participantes y menciona al que tiene el rol destino (tabla emisor → condición → rol). Hace a los mandates re-armables con otros nombres.
+9. **Espera acotada.** Si un seat no responde en 10 min, se registra "unanswered wait", se lo re-agrega al room y se reintenta una vez; nunca se auto-aprueba. Prohibido reclutar agentes ajenos a la banda. Un bloqueo real se registra como resultado de la etapa y se para, sin preguntar.
+10. **"No reply requested".** Los mensajes de evidencia suplementaria lo dicen explícito para no disparar turnos inútiles (ahorra tokens).
+11. **Veredicto en tres estados** (APPROVED / approved-with-follow-up / held-open-because-X) con barrido de riesgos obligatorio (cada uno: confirmed-safe con `archivo:línea`, tested, accepted u open). Los hallazgos equivocados se retractan en público.
+12. **Ley de conservación.** Cuando el dominio tiene una cantidad que debe balancear, una aserción de invariante global es obligatoria al final de cada test de concurrencia; si falta, es blocker.
+13. **Gate de regresión.** Conteo base de tests: si baja, hay que explicar qué se borró. El gate nunca se pipea por `tail`/`grep` (el exit code miente) y nombra el paso que falló. Una suite sin línea de resultado se trata como colgada.
+14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates con el brief del toy.
+15. **Handoff con campos fijos.** Qué cambió, cómo se construye y corre, qué verificó el emisor, `open_failures`, `next_action`. Si es largo, en partes numeradas con la última marcada "final"; nunca recortar requisitos. Referenciar la spec por sección en vez de pegarla entera en cada mensaje.
+16. **Log de enmiendas A1..An.** Cada vez que un review cambia el plan queda una entrada fechada con la razón (se complementa con los eventos `assumption`).
+17. **Higiene del repo.** `.gitattributes` con LF (un CRLF rompe el Dockerfile y tira la compuerta 3); el servicio bindea por env `HOST` con fallback `0.0.0.0` (con `127.0.0.1` no es alcanzable desde afuera del contenedor); sin paths absolutos del host, ids de room ni emails en docs.
+18. **Métricas de la fábrica.** Además de tiempo y tokens: tasa de rechazo por etapa y *override-rate* (veces que el humano tuvo que corregir), que en la corrida final tiene que ser 0.
+19. **Regla de restart en cada mandate.** Al reengancharse: anunciar el reattach, leer historia y plan, retomar el último ítem; el verifier re-corre el check en curso en vez de asumir su resultado.
+20. **Eventos vs. mensajes.** Progreso y hallazgos individuales como eventos; handoffs y veredictos como mensajes.
+
+### Esfuerzo medio
+
+21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. Verificar los flags contra nuestra versión de Jam.
+22. **Validador post-run.** Cruza `room.json` ↔ tasks ↔ commits: cada etapa cerrada tiene veredicto con SHA, cada SHA existe en el historial y cada rechazo tiene su reparación. Falla si queda algo huérfano.
+23. **Paquete de verificación final.** Clon público fresco → `harness check` → `harness run --all --mode isolated` → `evidence/verification-receipt.json` con comandos, exit codes y tiempos. `evidence/PACKAGING.json` con sha256, bytes y `exportedAt` de `room.json` y `"edited": false`. Audit de symlinks, gitlinks, `.git` anidado, credenciales en todo el historial y vocabulario del track en mandates.
+24. **Seat Spec Auditor** (opcional, suma un seat y costo). Solo lectura: matriz spec → código → check, busca faltantes y también extras no pedidos, firma por etapa y no por ítem para no llenar el room. El cierre de etapa requiere doble firma (verifier + auditor).
+25. **Ensayo general sobre el toy con criterios de aceptación de la fábrica.** Ruteo autónomo sin handles en el brief; al menos un rechazo que vuelve al builder (si no ocurre solo, se inyecta un bug a propósito); la fábrica sobrevive a un reinicio sin crear identidades nuevas; swim lanes grabables para el video.
+
+### Gotchas operativos de Jam (no están en las docs)
+
+- Una mención a un seat con el runtime parado es un no-op silencioso: `jam list` antes del dispatch es parte del preflight.
+- `room send` devuelve 404 hasta que el humano es participante del room.
+- `jam restart` no revive un peer parado, y Jam no recoge procesos `claude` huérfanos: revisarlos entre corridas.
+- El timeout de una aprobación humana hace auto-deny: en la corrida final no puede quedar ningún permiso en modo manual.
+- `jam plan set --snapshot` / `jam plan diagram` publican el plan en el room (re-ejecutar tras cada edición); `jam usage` da el consumo.
+- Pegar la spec completa en cada handoff (decenas de KB por mensaje) dispara compactaciones de contexto y mensajes cruzados entre etapas.
+
+---
+
 ## Plan
 
 | Cuándo | Qué |
