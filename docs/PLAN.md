@@ -13,7 +13,7 @@
 **Costo**
 - Medir con el track **toy** cuánto consume una corrida completa de 4 etapas antes de ir al track real.
 - Lanzar la corrida final **al inicio de una ventana de uso limpia**.
-- Reportar el costo en `FACTORY.md` como tiempo y tokens, que Claude Code muestra por sesión.
+- Reportar el costo en `FACTORY.md` como tiempo y tokens; la fuente de los tokens está en **Decisiones pendientes** 1.
 
 **Mandates:** genéricos, reusables para otro problema. Nada del track: ni endpoints, ni campos, ni dominio.
 
@@ -81,23 +81,23 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 1. **Aceptación antes que código.** El reviewer escribe y commitea su diseño de aceptación (sección de la spec → casos) antes de leer la implementación. Sus checks salen de la spec, nunca del código ni de los tests del builder.
 2. **Checklist de conformidad numerado `[C-nn]`.** Cada ítem atado a una sección de la spec y a un check. Veredicto por ítem: CONFORMS con `archivo:línea` o DEVIATES con esperado vs. actual. Un solo desvío rechaza el handoff. Las ambigüedades se marcan y van al coordinador.
 3. **Evidencia de recuperación.** Tabla en `FACTORY.md`: hallazgo → quién lo encontró → SHA rechazado → SHA de la reparación. Cada rechazo se preserva en `evidence/stage-N/rejection-NN.md` con pasos, esperado, actual y pasaje de la spec. Los errores de tooling o de test se registran aparte y no cuentan como defectos del producto.
-4. **Veredicto atado a SHA + tree hash.** Todo ACCEPT/REJECT cita `<sha>` y el tree hash de la carpeta (`git rev-parse HEAD:stage-N`). El reviewer verifica que los tree hash de las etapas anteriores no cambiaron.
+4. **Veredicto atado a SHA + tree hash.** Todo veredicto cita `sha=` y `tree=` (tree hash de la carpeta, `git rev-parse HEAD:stage-N`) en la última línea del ítem 26. El reviewer verifica que los tree hash de las etapas anteriores no cambiaron.
 5. **Release check.** Antes de aprobar una etapa: checkout limpio, build del contenedor, suites 1..N verdes y la suite N+1 **no debe pasar completa** (el harness solo invalida si pasa entera; la etapa 4 no tiene N+1). Después se congela la carpeta.
 6. **Diversidad de modelo como regla.** El verifier nunca corre el mismo modelo que el builder: dos instancias del mismo modelo se equivocan en lo mismo. Escrito como restricción en `FACTORY.md`, no como descripción.
 7. **Grafo de ruteo restringido.** El builder no menciona al auditor ni al humano; solo el coordinador habla con el humano; nadie tiene camino hacia su propia aprobación. `FACTORY.md` suma la sección "qué se rompe sin el room".
 8. **Ruteo por rol, no por handle.** Cada seat consulta los participantes y menciona al que tiene el rol destino (tabla emisor → condición → rol). Hace a los mandates re-armables con otros nombres.
 9. **Espera acotada.** Si un seat no responde en 10 min, se registra "unanswered wait", se lo re-agrega al room y se reintenta una vez; nunca se auto-aprueba. Prohibido reclutar agentes ajenos a la banda. Un bloqueo real se registra como resultado de la etapa y se para, sin preguntar.
 10. **"No reply requested".** Los mensajes de evidencia suplementaria lo dicen explícito para no disparar turnos inútiles (ahorra tokens).
-11. **Veredicto en tres estados** (APPROVED / approved-with-follow-up / held-open-because-X) con barrido de riesgos obligatorio (cada uno: confirmed-safe con `archivo:línea`, tested, accepted u open). Los hallazgos equivocados se retractan en público.
+11. **Barrido de riesgos obligatorio en cada veredicto**: cada riesgo como confirmed-safe con `archivo:línea`, tested, accepted u open; un ACCEPT con riesgos `open` los lista como follow-up. Los hallazgos equivocados se retractan en público. El vocabulario de veredictos es el de **Vocabulario único** (abajo).
 12. **Ley de conservación.** Cuando el dominio tiene una cantidad que debe balancear, una aserción de invariante global es obligatoria al final de cada test de concurrencia; si falta, es blocker.
 13. **Gate de regresión.** Conteo base de tests: si baja, hay que explicar qué se borró. El gate nunca se pipea por `tail`/`grep` (el exit code miente) y nombra el paso que falló. Una suite sin línea de resultado se trata como colgada.
-14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates con el brief del toy.
+14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates, ya congelados, con el brief del toy (toy de cierre, ver **Plan**).
 15. **Handoff con campos fijos.** Qué cambió, cómo se construye y corre, qué verificó el emisor, `open_failures`, `next_action`. Todo handoff delegado lleva **la tarea y la spec completas pegadas** (la guía oficial lo exige: "pointing at a room message id or asking a seat to read the room is insufficient"; el reviewer también recibe los requisitos completos). Si es largo, en partes numeradas con la última marcada "final"; nunca recortar requisitos. El costo de pegarla se controla con partes numeradas y la regla "un turno por unidad de trabajo", no referenciando.
 16. **Log de enmiendas A1..An.** Cada vez que un review cambia el plan queda una entrada fechada con la razón (se complementa con los eventos `assumption`).
 17. **Higiene del repo.** `.gitattributes` con LF (un CRLF rompe el Dockerfile y tira la compuerta 3); el servicio lee `PORT` con default `8080` y bindea `0.0.0.0` (con `127.0.0.1` no es alcanzable desde afuera del contenedor; el runner no pasa ninguna otra variable); sin paths absolutos del host, ids de room ni emails en docs.
 18. **Métricas de la fábrica.** Además de tiempo y tokens: tasa de rechazo por etapa y *override-rate* (veces que el humano tuvo que corregir), que en la corrida final tiene que ser 0.
 19. **Regla de restart en cada mandate.** Al reengancharse: anunciar el reattach, leer historia y plan, retomar el último ítem; el verifier re-corre el check en curso en vez de asumir su resultado.
-20. **Eventos vs. mensajes.** Progreso y hallazgos individuales como eventos; handoffs y veredictos como mensajes.
+20. **Eventos vs. mensajes.** Solo el progreso descartable va como evento (no llega a `room.json`). Hallazgos, handoffs, veredictos y suposiciones van como `text`: son lo que leen el jurado y el validador.
 
 ### Esfuerzo medio
 
@@ -111,23 +111,53 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 
 Ideas de protocolo tomadas de la spec de A2A (https://a2a-protocol.org), sus samples, los repos de la org `agntcy` y proyectos que los usan. Ninguno se adopta como transporte: BAND es obligatoria, y reemplazar el room falla el delete test.
 
-26. **Última línea parseable con estado cerrado.** Todo handoff y veredicto termina en una sola línea fija: `STATE <working|input-required|completed|failed|rejected> stage=N sha=<sha> task=<key> refs=[...]` seguida de `NEXT @<rol>` o `DONE`. `rejected` es el receptor negándose (handoff inválido o fuera de su rol), distinto de `failed`; `input-required` va al coordinador, nunca al humano. El protocolo se versiona como `factory-protocol/v1` en `FACTORY.md`. Es la versión barata del sobre de protocolo y lo que parsea el validador del ítem 22. Fuentes: SHADI AgentBridge "Line protocol" (`agntcy/shadi`), `TaskState` de `a2a.proto`, extensiones de A2A.
-27. **Rechazo tipado de un handoff incompleto.** El receptor valida los campos del ítem 15 antes de trabajar; si falta uno responde `rejected code=MISSING_FIELD details=[...]` y cierra el turno. Fuente: spec A2A §3.3.2 y §3.3.4.
+26. **Última línea parseable con estado cerrado.** Todo handoff y veredicto termina en la única línea de protocolo definida en **Vocabulario único** (abajo), seguida de `NEXT @<handle>` o `DONE`. `refused` es el receptor negándose a tomar un handoff (inválido o fuera de su rol), distinto de un REJECT del producto y de `failed`; `input-required` va al coordinador, nunca al humano. El protocolo se versiona como `factory-protocol/v1` en `FACTORY.md`. Es la versión barata del sobre de protocolo y lo que parsea el validador del ítem 22. Fuentes: SHADI AgentBridge "Line protocol" (`agntcy/shadi`), `TaskState` de `a2a.proto`, extensiones de A2A.
+27. **Rechazo tipado de un handoff incompleto.** El receptor valida los campos del ítem 15 antes de trabajar; si falta uno responde `STATE refused code=MISSING_FIELD details=[...]` y cierra el turno. Fuente: spec A2A §3.3.2 y §3.3.4.
 28. **ACCEPT / DISPUTE / CLARIFY por hallazgo.** El builder contesta cada `[C-nn]` rechazado: ACCEPT con el SHA de la reparación, DISPUTE con evidencia o CLARIFY. Un ACCEPT no cierra el hallazgo hasta que el reviewer lo re-verifica. Al tope de rondas decide el coordinador. Es el disenso visible que premian los jueces.
 29. **Grafo de menciones observado contra el declarado.** El validador saca las aristas rol→rol de las `@mention` en `room.json` y las compara con la matriz de capacidades: toda arista no declarada falla y nadie aprueba su propio SHA. Antes de correr, la tabla de ruteo no puede tener un camino a la autoaprobación. La matriz con conteos se publica como `text` y responde "a quién se dejó afuera". Solo el coordinador conserva `band_add_participant` (modelo del moderador de SLIM): **verificar en el toy si band-peer respeta filtros de tools**, documentados solo para el SDK. Fuente: `agent_to_agent_interactions.py` de `agntcy/telemetry-hub`.
 30. **Contador de ciclos.** Por etapa, las secuencias A→B→A→B sin SHA nuevo son ping-pong (ruido) y con SHA nuevo son reparaciones. Se publican los dos conteos: mide la regla anti-loop. Fuente: `cycles.py` de `telemetry-hub`.
 31. **Niveles de evidencia.** Columna en el evidence index: absent / declared / checked / demonstrated / attested; el validador cuenta solo demonstrated o más. Verificar al consumir: antes de construir sobre algo que otro afirmó ("tests verdes"), se re-corre ese chequeo. En un caso publicado, un "11/11 GREEN" eran 11 fallas.
 32. **Corte por plateau y por rol no mapeado.** Si la cantidad de checks fallados no baja en 2 rondas seguidas, se escala al coordinador sin esperar la quinta. Si una tarea no encaja en ningún rol de los mandates, se registra y se para; no se improvisa un rol. Fuente: tabla "Halt" de ASSEMBLY/CONVERGE (SHADI).
-33. **Brief versionado con acuse.** El coordinador publica el goal de la etapa como `brief@vN`; cada handoff lo cita y el receptor lo confirma en su última línea. Un handoff con versión vieja se descarta, y un seat puede objetar con `CHALLENGE brief@vN <razón>` al coordinador. Fuente: patrón "shared intent registry" de CoffeeAGNTCY.
-34. **Roster decidido y publicado en runtime.** Cuando el coordinador suma un breaker o un auditor (Decisión pendiente 4), publica SELF / COLLABORATE / HANDOFF con el motivo y qué trabajo se conserva, o una encuesta de roles con `ACCEPT role=<r> model=<m>` / `DECLINE <motivo>`, y cierra con `ROSTER stage=N rol=@handle…` como `text`. Solo seats de la banda (ítem 9). Es la señal "roster decidido en runtime" del delete test.
-35. **Genericidad medida por distancia de grafos.** Diferencia simétrica entre las aristas rol→rol del toy y de la corrida final, con los mismos mandates y otro brief. Una diferencia chica prueba que la forma de la fábrica no depende del dominio; la cifra va a `FACTORY.md` y sale de un comando. Fuente: `graph_determinism_score.py` de `telemetry-hub`.
-36. **Una tarea terminal no se reabre.** La reparación es una tarea nueva con `refs: [#N@<sha-rechazado>]` en el `text`, y el validador sigue la cadena sin heurística. El board puede seguir usando `in_review → in_progress` para coordinar. Fuente: "Task Immutability" de A2A.
+33. **Brief versionado con acuse.** El coordinador publica el goal de la etapa como `brief@vN`; cada handoff lo cita en el campo `brief=` de su última línea, y el receptor lo repite en la suya. Un handoff con versión vieja se descarta, y un seat puede objetar con `CHALLENGE brief@vN <razón>` al coordinador. Fuente: patrón "shared intent registry" de CoffeeAGNTCY.
+34. **Roster activado y publicado en runtime.** Qué seats existen (con su mandate) se decide antes del dispatch (Decisión pendiente 4): `harness check` exige mandate de todo seat que habló, y un seat creado que nunca habla no lo rompe. En la corrida, el coordinador decide si **activa** al breaker o al auditor; al hacerlo publica SELF / COLLABORATE / HANDOFF con el motivo y qué trabajo se conserva, o una encuesta de roles con `ACCEPT role=<r> model=<m>` / `DECLINE <motivo>`, y cierra con `ROSTER stage=N rol=@handle…` como `text`. Solo seats de la banda (ítem 9). Es la señal "roster decidido en runtime" del delete test.
+35. **Genericidad medida por distancia de grafos.** Diferencia simétrica entre las aristas rol→rol del toy de cierre y de la corrida final, con los mismos mandates congelados y otro brief (un toy con mandates anteriores no sirve de comparación). Una diferencia chica prueba que la forma de la fábrica no depende del dominio; la cifra va a `FACTORY.md` y sale de un comando. Fuente: `graph_determinism_score.py` de `telemetry-hub`.
+36. **Una tarea terminal no se reabre.** La reparación es una tarea nueva con `refs=[#N@<sha-rechazado>]` en su última línea, y el validador sigue la cadena sin heurística. El board puede seguir usando `in_review → in_progress` para coordinar. Fuente: "Task Immutability" de A2A.
 37. **Contratos abiertos al cierre de etapa.** El coordinador publica las obligaciones pendientes (emisor, receptor, entregable, `close_loop_time`); la etapa no cierra con ninguna abierta.
 38. **Métricas del validador.** Tasa de recuperación autónoma = rechazos reparados y aceptados sin humano / rechazos totales (junto al override-rate del ítem 18). El validador separa errores (SHA inexistente, veredicto sin reparación: fallan) de warnings (latencia alta, ciclo de ruido: se reportan). El uso por etapa se publica con forma de spans (`step_id`, `parent_step_id`, seat, tokens, latencia): da el formato de la Decisión pendiente 1, no la fuente del número. Fuentes: `error_recovery_rate` de `agntcy/observe`, validación de OASF, extensión traceability de a2a-samples.
-39. **Cadena de hashes entre veredictos.** Cada ACCEPT/REJECT cita el sha256 del veredicto anterior de la etapa; el validador detecta mensajes perdidos, cruzados o duplicados por la entrega at-least-once. Git encadena commits, no veredictos.
+39. **Cadena de hashes entre veredictos.** Cada veredicto cita en `prev=` el sha256 del veredicto anterior de la etapa; el validador detecta mensajes perdidos, cruzados o duplicados por la entrega at-least-once. Git encadena commits, no veredictos.
 40. **Retro post-run.** Al cerrar, el coordinador publica cambios genéricos propuestos a los mandates; no se aplican durante la corrida (regla 19) y alimentan la revisión entre ensayos.
 
 Descartado de estas fuentes: usar A2A, SLIM, Dir o SHADI como transporte; `auth-required`, interrupts con resume y approval gates humanos (steering); OAuth, DID, firmas y pagos (sin superficie en BAND); recruiter o descubrimiento fuera de la banda (ítem 9); varios builders compitiendo con voto (multiplica costo); orquestadores por turno (no pasan el delete test); métricas con LLM como juez (no reproducibles).
+
+### Vocabulario único y última línea
+
+Un enum por nivel; ningún otro término de veredicto en mandates ni mensajes.
+
+| Nivel | Valores | Quién lo emite |
+|---|---|---|
+| Hallazgo `[C-nn]` | `CONFORMS` / `DEVIATES` | reviewer, auditor |
+| Respuesta a un hallazgo | `ACCEPT` / `DISPUTE` / `CLARIFY` (ítem 28) | builder |
+| Candidato (SHA) | `ACCEPT` / `REJECT` / `INSUFFICIENT_EVIDENCE` / `BLOCKED` (reglas 12–13) | reviewer, breaker, auditor |
+| Handoff | `working` / `input-required` / `completed` / `failed` / `refused` | todo seat |
+
+Línea de protocolo, única y al final de cada handoff o veredicto (ítem 26); los campos que no aplican se omiten:
+
+```
+STATE <estado|veredicto> stage=N task=<key> sha=<sha> tree=<tree> refs=[#N@<sha>] prev=<sha256> brief=vN
+NEXT @<handle> | DONE
+```
+
+Es la referencia de estado de la regla 5 y reúne lo que piden los ítems 4, 33, 36 y 39. El ACCEPT del builder a un hallazgo y el ACCEPT del reviewer a un candidato se distinguen por el nivel: el primero lleva `[C-nn]`, el segundo `sha=`.
+
+### Alcance por fase
+
+Los mandates cargan solo lo de la fase en curso: cada regla de más es costo por turno y *verbosity*.
+
+| Fase | Entra |
+|---|---|
+| **Toy (28–29 sep)** | Ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28; reglas 1–5, 7, 11, 13. Validador v1: SHA existentes, veredicto por etapa, rechazos con reparación (ítem 22 básico). Resolver Decisiones pendientes 1–5 |
+| **Final (si el toy lo prueba)** | Ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36; breaker o auditor según Decisión 4. Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (38) |
+| **Solo si sobra tiempo** | Ítems 21, 24 (si no entró por Decisión 4), 35, 37, 39, 40; watchdog, worktrees, sobre de protocolo completo y el resto de "Esfuerzo medio" de Lecciones |
 
 ### Gotchas operativos de Jam (no están en las docs; comandos sin verificar con `band --help`)
 
@@ -221,7 +251,7 @@ La presentación responde cuatro preguntas: el equipo; quién le habla a quién,
 2. **Bloque anti-loop**: mencionar es llamar a una función; los acks van sin `@`; silencio después de un handoff; nada de "ready and waiting" o "standing by"; nombrar sin `@` a quien no tiene que actuar.
 3. **Un turno por unidad de trabajo**: mandar el handoff y cerrar el turno; nunca seguir con la etapa siguiente en el mismo turno. Un seat publica su respuesta recién al cerrar el turno: turnos de 1–2 h produjeron respuestas con hasta 72 min de atraso, un handoff cruzado y una reparación delegada dos veces.
 4. **Handoffs sin esperar respuesta**: un envío que bloquea esperando contestación, con un trabajo de más de 10 min del otro lado, dejó a un coordinador 74 min parado con 6 timeouts.
-5. **Cada mensaje dice a qué estado responde** (`re: <SHA> etapa N`); el receptor descarta en silencio lo anterior al último veredicto que conoce.
+5. **Cada mensaje dice a qué estado responde** (campos `stage=` y `sha=` de la última línea, ver **Vocabulario único**); el receptor descarta en silencio lo anterior al último veredicto que conoce.
 6. **Antes de pedir un handoff, mirar el board**: el handoff se registra también como transición de la tarea con el SHA.
 7. **Un solo dueño de la reparación**: el REJECT va del reviewer al builder y el coordinador no re-delega.
 8. **El coordinador no reenvía contenido**: el emisor le habla directo al destinatario. Antes de pasar un reporte, el coordinador lo verifica con un comando.
@@ -329,7 +359,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
    - **Verificador de caja negra (breaker)**, idealmente en otro proveedor (Plan B/C): prueba casos extremos y la checklist adversarial contra el servicio corriendo, con poder de veto. Es donde salieron 4 de 5 defectos en la corrida analizada. Se suma si en el toy se escapan defectos que el reviewer no ve.
    - **Auditor de spec** (ítem 24): solo lectura, matriz spec → código → check, detecta faltantes y extras, doble firma de cierre de etapa. Se suma si el cupo lo permite después del breaker.
    - **Planner separado: descartado por ahora.** No es el cuello de botella (la review sí), suma cupo y un salto por handoff, y un pipeline fijo de roles puntúa bajo con los jueces. Solo se reconsidera si el toy muestra al coordinador saturado, y en ese caso con un plan que el reviewer o el breaker puedan rechazar antes de construir.
-5. **Repo del entregable y quién pushea.** BAND no integra GitHub ni guarda archivos: solo lleva mensajes. Los seats corren en la Mac (Claude Code con `band-peer`) y usan `git` con las credenciales locales; en el room viajan referencias (`re: <SHA> etapa N`). El entregable vive en un **repo público nuevo** creado para la corrida final; `lights-out` queda como workspace (plan, docs, ensayos). Por defecto los seats pushean al cerrar cada etapa, así el historial muestra commits repartidos y no un push final único. Si los seats se crean con script (ítem 21), el `remote` y los permisos de push quedan configurados antes del dispatch. Ningún seat imprime tokens de GitHub en la salida de un tool: quedarían en `room.json`.
+5. **Repo del entregable y quién pushea.** BAND no integra GitHub ni guarda archivos: solo lleva mensajes. Los seats corren en la Mac (Claude Code con `band-peer`) y usan `git` con las credenciales locales; en el room viajan referencias (`stage=` y `sha=` en la última línea). El entregable vive en un **repo público nuevo** creado para la corrida final; `lights-out` queda como workspace (plan, docs, ensayos). Por defecto los seats pushean al cerrar cada etapa, así el historial muestra commits repartidos y no un push final único. Si los seats se crean con script (ítem 21), el `remote` y los permisos de push quedan configurados antes del dispatch. Ningún seat imprime tokens de GitHub en la salida de un tool: quedarían en `room.json`.
 
 ---
 
@@ -338,11 +368,11 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 | Cuándo | Qué |
 |---|---|
 | sáb 26 – dom 27 sep | Inscribirse en lablab. Crear cuenta BAND, instalar Desktop + CLI + plugin, readiness check. Unirse a los dos Discord. Leer las specs completas. Track elegido: **tablekeeper** (26 sep) |
-| lun 28 – mar 29 sep | Diseñar la fábrica (roles, mandates, protocolo de handoff y review). Correr **toy** completo en modo aislado y medir tiempo, tokens y cupo |
-| mié 30 sep – vie 2 oct | Iterar sobre el track real: etapas 1–4, ajustar mandates según las fallas |
+| lun 28 – mar 29 sep | Diseñar la fábrica con el alcance de fase **Toy** (roles, mandates, protocolo de handoff y review). Correr **toy** completo en modo aislado y medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
+| mié 30 sep – vie 2 oct | Iterar sobre el track real: etapas 1–4, ajustar mandates según las fallas. Vie 2 oct: **congelar mandates** (hashes SHA-256) |
 | sáb 3 oct | **Corrida final**: room y repo nuevos, autónoma, al inicio de una ventana de cupo |
-| dom 4 oct | `harness check` + suites en modo aislado. Descargar `room.json` a mano de la console de Band (**Download full session**; no hay comando) y redactar credenciales. Escribir README y FACTORY.md a mano |
-| lun 5 oct | Video + slides. Enviar el formulario antes de la noche (cierre mar 6 oct 03:59 ART) |
+| dom 4 oct | `harness check` + suites en modo aislado. Descargar `room.json` a mano de la console de Band (**Download full session**; no hay comando) y redactar credenciales. Validador post-run. **Toy de cierre** con los mandates congelados, en paralelo (evidencia de genericidad, ítems 14 y 35). Escribir README y FACTORY.md a mano. Ficha con `hackathon-submission` |
+| lun 5 oct | Deck (`hackathon-deck`, después de la ficha para no contradecirla) y video. Enviar el formulario antes de la noche (cierre mar 6 oct 03:59 ART) |
 
 ---
 
