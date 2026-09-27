@@ -21,17 +21,17 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 - Protocolo: **Vocabulario único y última línea** (ítems 26–28).
 - Alcance: ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28; reglas 1–5, 7, 11, 13.
 - Validador v1 (ítem 22 básico): SHA existentes, veredicto por etapa, rechazos con reparación.
-- Preflight del seat (Operación) y toy completo en modo aislado.
+- Preflight del seat (Operación). Primero el **caso chico** y, cuando cumple sus criterios, el **caso mediano** (toy) en modo aislado (ver **Casos de prueba de la fábrica**).
 
-**Sale** con las **Decisiones pendientes** 1–5 resueltas y escritas, al menos un rechazo que volvió al builder, un reinicio sobrevivido sin identidades nuevas (ítem 25) y el costo de la corrida medido.
+**Sale** con los criterios de los casos chico y mediano cumplidos y las **Decisiones pendientes** 1–5 resueltas y escritas.
 
 ### F2 — Iteración sobre tablekeeper
 
-- Corridas del track real; los mandates cambian solo por defectos genéricos de la fábrica (regla 19) y cada cambio queda registrado.
+- Corridas del **caso grande** (el track real); los mandates cambian solo por defectos genéricos de la fábrica (regla 19) y cada cambio queda registrado.
 - Alcance que se suma si el toy lo probó: ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36; breaker o auditor según la Decisión 4.
 - Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (ítem 38).
 
-**Sale** con una corrida completa en la que cada suite llega a 0,5, ninguna carpeta en overshoot, `harness check` limpio y los mandates y el brief congelados con sus hashes SHA-256 (Operación: freeze).
+**Sale** con una corrida que cumple los criterios del caso grande (salvo los de la corrida final: repo nuevo y un solo intento) y los mandates y el brief congelados con sus hashes SHA-256 (Operación: freeze).
 
 ### F3 — Corrida final
 
@@ -44,7 +44,7 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 
 - Descargar `room.json` de la console, redactar credenciales y registrar en `evidence/PACKAGING.json` (ítem 23).
 - Checks del paquete final (Contrato del runner) y validador sobre la corrida final.
-- Toy de cierre con los mandates congelados: evidencia de genericidad (ítem 14; la métrica del ítem 35 solo si sobra tiempo).
+- Toy de cierre: el caso mediano re-corrido con los mandates congelados, evidencia de genericidad (ítem 14; la métrica del ítem 35 solo si sobra tiempo).
 - README y `FACTORY.md` a mano; ficha con `hackathon-submission`.
 
 **Sale** con `harness check` y `harness run --all --mode isolated` limpios sobre un clon fresco y `docs/submission.md` dentro de los límites de cada campo.
@@ -60,6 +60,53 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 ### Solo si sobra tiempo
 
 Ítems 21, 24 (si no entró por la Decisión 4), 35, 37, 39, 40; watchdog, worktrees, sobre de protocolo completo y el resto de "Esfuerzo medio" de Lecciones.
+
+## Casos de prueba de la fábrica
+
+Tres casos de tamaño creciente y en tres dominios distintos. El chico aísla las fallas de la fábrica (si falla un producto trivial, falla la coordinación); los otros dos suben la dificultad del producto. Correr los mismos mandates sobre los tres es la prueba de "Generic: another team could point your mandates at a different problem". Cada criterio nombra el comando o artefacto que lo prueba.
+
+### Chico — API de notas (F1)
+
+Problema propio de una etapa: CRUD de notas con create idempotente por `Idempotency-Key`, sin UI. Spec en `cases/small/SPEC.md` (formato de brief del ítem 14), checks escritos a mano desde la spec en `cases/small/checks.py` (stdlib). No se entregan: son nuestra suite de aceptación.
+
+| Capa | Criterio | Cómo se prueba |
+|---|---|---|
+| Producto | 100% de los checks | `python3 cases/small/checks.py http://localhost:8080` → exit 0 |
+| Producto | Contenedor sano en ≤ 30 s, también sin red | `docker build -f stage-1/Dockerfile stage-1/`; `docker run --network none -e PORT=8080` + `/health` |
+| Fábrica | Todos los seats hablan al menos una vez y hay `@` recíprocos | `harness check` sobre `room.json` + conteo de `senderId` |
+| Fábrica | Un solo dispatch, cero mensajes humanos después | `room.json`: mensajes con `senderType` humano = 1 |
+| Fábrica | Ciclo completo coordinador → builder → reviewer → veredicto | validador v1 |
+| Fábrica | Al menos un REJECT con reparación (si no ocurre, se inyecta un bug) | validador v1: rechazo con `refs=` a su SHA |
+| Fábrica | Un reinicio de seat sobrevivido sin identidades nuevas | `senderId` distintos antes y después del reinicio |
+| Fábrica | 100% de handoffs y veredictos con la última línea parseable | validador v1 |
+| Fábrica | Tiempo y tokens medidos: costo base de la fábrica | fuente de la Decisión pendiente 1 |
+
+### Mediano — track `toy` (F1)
+
+Contador compartido del kickoff: de práctica, sin puntaje, trae la suite completa. Las etapas salen de su spec; los tests no se leen.
+
+| Capa | Criterio | Cómo se prueba |
+|---|---|---|
+| Producto | Suite completa en cada etapa, modo aislado | `harness run --all --mode isolated` |
+| Producto | Paquete válido | `harness check` limpio |
+| Fábrica | **Los mismos mandates que el chico**; solo cambia el brief; todo cambio de mandate registrado como defecto genérico (regla 19) | `git diff` de `mandates/` entre corridas + log de enmiendas |
+| Fábrica | Mandates sin vocabulario de ningún dominio | grep de los términos de los tres casos sobre `mandates/`: vacío |
+| Fábrica | Handoffs con la spec completa pegada (en partes si hace falta) | lectura de `room.json` |
+| Fábrica | Todas las etapas en un solo dispatch; costo por etapa publicado en el room | `room.json` |
+| Fábrica | Breaker o auditor probado (Decisión 4) | el seat habla y su veredicto aparece en el validador |
+
+### Grande — track `tablekeeper` (F2 y F3)
+
+La entrega. Se itera en F2 y se corre una sola vez, limpia, en F3.
+
+| Capa | Criterio | Cómo se prueba |
+|---|---|---|
+| Producto | Cada suite 1..N ≥ 0,5, objetivo etapa 4, sin overshoot | `harness run --all --mode isolated` |
+| Producto | Checks del paquete final (health ≤ 30 s aislado, `--network none`, reset 204 < 10 s, sin binds locales, sin symlinks) | **Contrato del runner** › Checks del paquete final |
+| Fábrica | Todo el **Checklist de entrega** | checklist |
+| Fábrica | Override-rate 0 | `room.json`: un solo mensaje humano |
+| Fábrica | Al menos un hallazgo con su rastro ACCEPT/DISPUTE | validador v2 |
+| Fábrica | Validador v2 verde y `room.json` aceptado | validador v2 + `harness check` |
 
 ## Setup propio de Lights-out
 
@@ -399,7 +446,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 - https://lablab.ai/delivering-your-hackathon-solution: el video arranca con una introducción, pasa por el PDF y después muestra el producto.
 - https://lablab.ai/guide/how-to-win-an-ai-hackathon
 
-## Decisiones pendientes (resolver en el toy)
+## Decisiones pendientes (resolver en F1, casos chico y mediano)
 
 1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `jam usage` no está verificado; `room.json` no trae usage. Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa.
 2. **Cómo se crean los seats.** Onboarding manual con `/jam` desde Desktop, script headless (ítem 21, comandos sin verificar) o seats SDK para OpenCode (Plan B/C). Elegir uno para la corrida final y documentarlo en `FACTORY.md`.
@@ -417,7 +464,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 | Cuándo | Qué |
 |---|---|
 | sáb 26 – dom 27 sep | Inscribirse en lablab. Crear cuenta BAND, instalar Desktop + CLI + plugin, readiness check. Unirse a los dos Discord. Leer las specs completas. Track elegido: **tablekeeper** (26 sep) |
-| lun 28 – mar 29 sep | F0 y F1: diseñar la fábrica con el alcance de F1 (roles, mandates, protocolo de handoff y review). Correr **toy** completo en modo aislado y medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
+| lun 28 – mar 29 sep | F0 y F1: diseñar la fábrica con el alcance de F1 (roles, mandates, protocolo de handoff y review). Correr el caso chico y después el **toy** completo en modo aislado; medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
 | mié 30 sep – vie 2 oct | Iterar sobre el track real: etapas 1–4, ajustar mandates según las fallas. Vie 2 oct: **congelar mandates** (hashes SHA-256) |
 | sáb 3 oct | **Corrida final**: room y repo nuevos, autónoma, al inicio de una ventana de cupo |
 | dom 4 oct | `harness check` + suites en modo aislado. Descargar `room.json` a mano de la console de Band (**Download full session**; no hay comando) y redactar credenciales. Validador post-run. **Toy de cierre** con los mandates congelados, en paralelo (evidencia de genericidad, ítems 14 y 35). Escribir README y FACTORY.md a mano. Ficha con `hackathon-submission` |
