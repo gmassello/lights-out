@@ -2,6 +2,65 @@
 
 > Movido desde `docs/HACKATHON.md` (secciones 12–14) el 26 sep 2026, cuando ese archivo pasó a ser el brief del evento en inglés.
 
+## Hoja de ruta por fases
+
+Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de salida, no por fecha (el calendario está en **Plan**). Los mandates cargan solo lo de la fase en curso: cada regla de más es costo por turno y *verbosity*.
+
+### F0 — Setup
+
+- Inscripción en lablab, Discord conectado y equipo propio como admin.
+- Cuenta BAND, Desktop, CLI y plugin `band-peer`; readiness check.
+- `band --help` en la versión instalada para verificar los comandos del ítem 21 y los gotchas de Jam.
+- Leer las specs completas de los tracks.
+
+**Sale** con readiness en verde, *Submit Project* habilitado y los comandos reales de `band` anotados.
+
+### F1 — Diseño de la fábrica y toy
+
+- Mandates con la plantilla de la regla 1 y el bloque anti-loop (regla 2); brief con la plantilla del ítem 14.
+- Protocolo: **Vocabulario único y última línea** (ítems 26–28).
+- Alcance: ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28; reglas 1–5, 7, 11, 13.
+- Validador v1 (ítem 22 básico): SHA existentes, veredicto por etapa, rechazos con reparación.
+- Preflight del seat (Operación) y toy completo en modo aislado.
+
+**Sale** con las **Decisiones pendientes** 1–5 resueltas y escritas, al menos un rechazo que volvió al builder, un reinicio sobrevivido sin identidades nuevas (ítem 25) y el costo de la corrida medido.
+
+### F2 — Iteración sobre tablekeeper
+
+- Corridas del track real; los mandates cambian solo por defectos genéricos de la fábrica (regla 19) y cada cambio queda registrado.
+- Alcance que se suma si el toy lo probó: ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36; breaker o auditor según la Decisión 4.
+- Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (ítem 38).
+
+**Sale** con una corrida completa en la que cada suite llega a 0,5, ninguna carpeta en overshoot, `harness check` limpio y los mandates y el brief congelados con sus hashes SHA-256 (Operación: freeze).
+
+### F3 — Corrida final
+
+- Preflight: los ítems de la corrida en el **Checklist de entrega** (Mac despierta, repo nuevo con remote y push), seats *bound*, `jam list`, ningún permiso en modo manual.
+- Un solo dispatch con las 4 etapas; sin intervención humana después.
+
+**Sale** cuando la corrida termina. Si falla un gate, se repite en una ventana de cupo nueva y el toy de cierre de F4 pasa a ser opcional.
+
+### F4 — Empaquetado
+
+- Descargar `room.json` de la console, redactar credenciales y registrar en `evidence/PACKAGING.json` (ítem 23).
+- Checks del paquete final (Contrato del runner) y validador sobre la corrida final.
+- Toy de cierre con los mandates congelados: evidencia de genericidad (ítem 14; la métrica del ítem 35 solo si sobra tiempo).
+- README y `FACTORY.md` a mano; ficha con `hackathon-submission`.
+
+**Sale** con `harness check` y `harness run --all --mode isolated` limpios sobre un clon fresco y `docs/submission.md` dentro de los límites de cada campo.
+
+### F5 — Entrega
+
+- Deck con `hackathon-deck`, después de la ficha para no contradecirla.
+- Video con `personal-record-video` (3 a 4:30 min, con la grabación del room).
+- Formulario de lablab y auditoría con `hackathon-close`.
+
+**Sale** con el formulario enviado y el **Checklist de entrega** completo.
+
+### Solo si sobra tiempo
+
+Ítems 21, 24 (si no entró por la Decisión 4), 35, 37, 39, 40; watchdog, worktrees, sobre de protocolo completo y el resto de "Esfuerzo medio" de Lecciones.
+
 ## Setup propio de Lights-out
 
 **Modelos y cupo**
@@ -91,7 +150,7 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 11. **Barrido de riesgos obligatorio en cada veredicto**: cada riesgo como confirmed-safe con `archivo:línea`, tested, accepted u open; un ACCEPT con riesgos `open` los lista como follow-up. Los hallazgos equivocados se retractan en público. El vocabulario de veredictos es el de **Vocabulario único** (abajo).
 12. **Ley de conservación.** Cuando el dominio tiene una cantidad que debe balancear, una aserción de invariante global es obligatoria al final de cada test de concurrencia; si falta, es blocker.
 13. **Gate de regresión.** Conteo base de tests: si baja, hay que explicar qué se borró. El gate nunca se pipea por `tail`/`grep` (el exit code miente) y nombra el paso que falló. Una suite sin línea de resultado se trata como colgada.
-14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates, ya congelados, con el brief del toy (toy de cierre, ver **Plan**).
+14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates, ya congelados, con el brief del toy (toy de cierre, ver F4 en **Hoja de ruta por fases**).
 15. **Handoff con campos fijos.** Qué cambió, cómo se construye y corre, qué verificó el emisor, `open_failures`, `next_action`. Todo handoff delegado lleva **la tarea y la spec completas pegadas** (la guía oficial lo exige: "pointing at a room message id or asking a seat to read the room is insufficient"; el reviewer también recibe los requisitos completos). Si es largo, en partes numeradas con la última marcada "final"; nunca recortar requisitos. El costo de pegarla se controla con partes numeradas y la regla "un turno por unidad de trabajo", no referenciando.
 16. **Log de enmiendas A1..An.** Cada vez que un review cambia el plan queda una entrada fechada con la razón (se complementa con los eventos `assumption`).
 17. **Higiene del repo.** `.gitattributes` con LF (un CRLF rompe el Dockerfile y tira la compuerta 3); el servicio lee `PORT` con default `8080` y bindea `0.0.0.0` (con `127.0.0.1` no es alcanzable desde afuera del contenedor; el runner no pasa ninguna otra variable); sin paths absolutos del host, ids de room ni emails en docs.
@@ -148,16 +207,6 @@ NEXT @<handle> | DONE
 ```
 
 Es la referencia de estado de la regla 5 y reúne lo que piden los ítems 4, 33, 36 y 39. El ACCEPT del builder a un hallazgo y el ACCEPT del reviewer a un candidato se distinguen por el nivel: el primero lleva `[C-nn]`, el segundo `sha=`.
-
-### Alcance por fase
-
-Los mandates cargan solo lo de la fase en curso: cada regla de más es costo por turno y *verbosity*.
-
-| Fase | Entra |
-|---|---|
-| **Toy (28–29 sep)** | Ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28; reglas 1–5, 7, 11, 13. Validador v1: SHA existentes, veredicto por etapa, rechazos con reparación (ítem 22 básico). Resolver Decisiones pendientes 1–5 |
-| **Final (si el toy lo prueba)** | Ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36; breaker o auditor según Decisión 4. Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (38) |
-| **Solo si sobra tiempo** | Ítems 21, 24 (si no entró por Decisión 4), 35, 37, 39, 40; watchdog, worktrees, sobre de protocolo completo y el resto de "Esfuerzo medio" de Lecciones |
 
 ### Gotchas operativos de Jam (no están en las docs; comandos sin verificar con `band --help`)
 
@@ -368,7 +417,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 | Cuándo | Qué |
 |---|---|
 | sáb 26 – dom 27 sep | Inscribirse en lablab. Crear cuenta BAND, instalar Desktop + CLI + plugin, readiness check. Unirse a los dos Discord. Leer las specs completas. Track elegido: **tablekeeper** (26 sep) |
-| lun 28 – mar 29 sep | Diseñar la fábrica con el alcance de fase **Toy** (roles, mandates, protocolo de handoff y review). Correr **toy** completo en modo aislado y medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
+| lun 28 – mar 29 sep | F0 y F1: diseñar la fábrica con el alcance de F1 (roles, mandates, protocolo de handoff y review). Correr **toy** completo en modo aislado y medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
 | mié 30 sep – vie 2 oct | Iterar sobre el track real: etapas 1–4, ajustar mandates según las fallas. Vie 2 oct: **congelar mandates** (hashes SHA-256) |
 | sáb 3 oct | **Corrida final**: room y repo nuevos, autónoma, al inicio de una ventana de cupo |
 | dom 4 oct | `harness check` + suites en modo aislado. Descargar `room.json` a mano de la console de Band (**Download full session**; no hay comando) y redactar credenciales. Validador post-run. **Toy de cierre** con los mandates congelados, en paralelo (evidencia de genericidad, ítems 14 y 35). Escribir README y FACTORY.md a mano. Ficha con `hackathon-submission` |
