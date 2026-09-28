@@ -4,7 +4,7 @@ Sources, read 2026-09-26: the lablab event page (HTML sections 01–10) and the 
 participant guide, `docs/participant-guide.md` in
 [band-ai/dark-factory-wearedevs](https://github.com/band-ai/dark-factory-wearedevs). The guide calls
 itself "the authoritative rules". Anything neither source states is marked `not published`.
-The project's own setup, plan and checklist live in `docs/PLAN.md`.
+The product contract lives in `docs/BRIEF.md`; the factory design, runner contract and checklist in `docs/FACTORY-DESIGN.md`.
 
 ## Event
 

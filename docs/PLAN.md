@@ -1,506 +1,226 @@
-# Lights-out — plan y setup propio
+# Lights-out — Plan
 
-> Movido desde `docs/HACKATHON.md` (secciones 12–14) el 26 sep 2026, cuando ese archivo pasó a ser el brief del evento en inglés.
+Source: `docs/BRIEF.md` · Design reference: `docs/FACTORY-DESIGN.md` · Deadline: Mon Oct 5 23:59 PDT (Tue Oct 6 03:59 ART) · Hours left at writing: 177.5
 
-## Hoja de ruta por fases
+## Summary
+At the end of this plan a three-seat factory with an acceptance-first reviewer has run once, clean,
+on tablekeeper from a single dispatch; the delivery repo passes the event checks on a fresh clone,
+and `FACTORY.md`, the room recording, the deck and the video are submitted. The unit that unlocks
+the demo is U6: the small case proves the seats hand off, block and recover before any real track
+is attempted.
 
-Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de salida, no por fecha (el calendario está en **Plan**). Los mandates cargan solo lo de la fase en curso: cada regla de más es costo por turno y *verbosity*.
+Two repositories are involved: this workspace (`lights-out`: plan, cases, tools) and a fresh public
+delivery repo created for the judged run (U11). Nothing in `stage-N/` is written by hand.
 
-### F0 — Setup
+## Key technical decisions
+- Acceptance first: verifiers commit their checks from the spec before the build. settled: inherited from BRIEF
+- The central signal is a blocking verdict; a stage closes only with an ACCEPT from a non-author seat. settled: inherited from BRIEF
+- Coordinator plans; no planner seat. settled: inherited from BRIEF
+- All seats on the Claude Max subscription; Gemini plan B, Featherless plan C. settled: inherited from BRIEF
+- Test cases grow in size across domains: own small case, practice track, real track. settled: inherited from BRIEF
+- One protocol line closes every handoff and verdict, with one verdict vocabulary per level (`docs/FACTORY-DESIGN.md`, "Vocabulario único y última línea"). settled: user-approved
+- The room validator and the cost meter are Python scripts using only the standard library, over `room.json` and the seats' session transcripts — chosen over shell pipelines because both parse JSON and a pipe hides exit codes. settled: plan-time
+- The small case runs with the three base seats only; the extra seat is first tried on the practice track. settled: plan-time
+- `docs/DESIGN.md` travels with the brief as a dispatch input and is declared in `FACTORY.md`; the factory, not us, builds the UI. settled: user-approved
 
-- Inscripción en lablab, Discord conectado y equipo propio como admin.
-- Cuenta BAND, Desktop, CLI y plugin `band-peer`; readiness check.
-- `band --help` en la versión instalada para verificar los comandos del ítem 21 y los gotchas de Jam.
-- Leer las specs completas de los tracks.
+## Units
+### U1. Setup and commands
+- **Goal:** BAND account, desktop app, CLI and seat plugin installed with the readiness check green; the lablab team exists with Discord linked; the kickoff repo and its harness run locally; the real `band` subcommands are recorded; `CLAUDE.md` has a `## Commands` block with the harness, the small-case checks and the validator.
+- **Covers:** — (enables every unit)
+- **Files:** `CLAUDE.md`, `docs/FACTORY-DESIGN.md` (verified CLI commands)
+- **Depends on:** —
+- **Status:** todo
+- **Tests:**
+  - happy: the harness check runs against the kickoff repo's toy example → exits cleanly.
+  - edge: the lablab project page → *Submit Project* is enabled for our team.
+  - error: a `band` subcommand listed in the design doc does not exist → it is marked unverified and nothing depends on it.
 
-**Sale** con readiness en verde, *Submit Project* habilitado y los comandos reales de `band` anotados.
+### U2. Mandates v1 and protocol
+- **Goal:** three generic mandates (coordinator, builder, reviewer) that start with `Harness:` and `Model:`, follow the role template, carry the anti-loop rules, the acceptance-first rule, the protocol line and the single verdict vocabulary, and name no domain.
+- **Covers:** R1, R2, R3, R9 · F2
+- **Files:** `mandates/coordinator.md`, `mandates/builder.md`, `mandates/reviewer.md` (workspace copies, frozen in U9)
+- **Depends on:** U1
+- **Status:** todo
+- **Tests:**
+  - happy: the harness check on a repo with the three mandates → mandate gate passes. Covers AE4.
+  - edge: the mandates are scanned for the vocabulary of notes, counters and reservations → no match.
+  - error: a mandate with `Model:` inside a heading → the harness check fails, and the fix is recorded.
 
-### F1 — Diseño de la fábrica y toy
+### U3. Brief template and small-case brief
+- **Goal:** a reusable brief template (goal, spec, milestones, constraints, done state, escalation) and the small-case brief filled from it; the brief is the only thing that changes between cases.
+- **Covers:** R1
+- **Files:** `cases/BRIEF-TEMPLATE.md`, `cases/small/SPEC.md`
+- **Depends on:** —
+- **Status:** todo
+- **Tests:**
+  - happy: the small-case spec follows every section of the template → no section missing.
+  - edge: the template read without any case → contains no domain term.
+  - error: a brief section left empty → the coordinator records an assumption instead of asking the human.
 
-- Mandates con la plantilla de la regla 1 y el bloque anti-loop (regla 2); brief con la plantilla del ítem 14.
-- Protocolo: **Vocabulario único y última línea** (ítems 26–28).
-- Alcance: ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28, 45, 46; reglas 1–5, 7, 11, 13.
-- Validador v1 (ítem 22 básico): SHA existentes, veredicto por etapa, rechazos con reparación.
-- Preflight del seat (Operación). Primero el **caso chico** y, cuando cumple sus criterios, el **caso mediano** (toy) en modo aislado (ver **Casos de prueba de la fábrica**).
+### U4. Room validator v1
+- **Goal:** a command that reads a `room.json` and the repo history and fails when a verdict names a commit that does not exist, a rejection has no repair, a stage closed without a non-author ACCEPT, a protocol line does not parse, or more than one human message exists.
+- **Covers:** R3, R5, R7, R9
+- **Files:** `tools/validate_room.py`
+- **Depends on:** U2
+- **Status:** todo
+- **Tests:**
+  - happy: the small-case recording → exits 0 and prints stages, verdicts and repairs first. Covers AE2.
+  - edge: a stage whose only ACCEPT comes from the candidate's author → reported as open. Covers AE3.
+  - error: a verdict citing a commit missing from history → exits non-zero naming the message. Covers AE10.
+  - error: a recording with two human messages → exits non-zero. Covers AE5.
 
-**Sale** con los criterios de los casos chico y mediano cumplidos y las **Decisiones pendientes** 1–5 resueltas y escritas.
+### U5. Cost meter
+- **Goal:** a command that sums time and tokens per seat and per stage window from the seats' session transcripts, or reports time only and labels the result partial when tokens are unavailable. Verified on this machine: each transcript line carries `timestamp`, and assistant lines carry `message.usage` (input, output, cache read, cache creation), but one message spans several lines with the same `message.id`, so usage is counted once per id. Still to confirm in U6: that seats launched from the desktop app write transcripts in the same place.
+- **Covers:** R6
+- **Files:** `tools/measure_cost.py`
+- **Depends on:** U1
+- **Status:** todo
+- **Tests:**
+  - happy: the small-case transcripts and the stage window → totals that match what the tool shows for the same sessions. Covers AE8.
+  - edge: a message split across several transcript lines with one id → counted once, not per line.
+  - edge: a seat with no messages inside the window → zero, not missing.
+  - error: transcripts without usage fields → output labelled partial, exit 0.
 
-### F2 — Iteración sobre tablekeeper
+### U6. Small-case run
+- **Goal:** the small case built end to end from one dispatch, meeting every criterion of the small case in `docs/FACTORY-DESIGN.md`.
+- **Covers:** R2, R3, R5 · F1, F2, F3
+- **Files:** `cases/small/` (run notes), a throwaway delivery repo
+- **Depends on:** U2, U3, U4, U5
+- **Status:** todo
+- **Tests:**
+  - happy: the delivered service against the small-case checks → 100%, and the validator → exits 0. Covers AE1.
+  - edge: no rejection happens on its own → one fault is injected in this practice run and the REJECT and repair appear in the room.
+  - error: a seat is restarted mid-stage → it keeps its identity and the stage finishes with no human message. Covers AE6.
 
-- Corridas del **caso grande** (el track real); los mandates cambian solo por defectos genéricos de la fábrica (regla 19) y cada cambio queda registrado.
-- Alcance que se suma si el toy lo probó: ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36, 41, 42, 43, 44, 47; breaker o auditor según la Decisión 4.
-- Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (ítem 38).
+### U7. Practice-track run
+- **Goal:** the practice track built from one dispatch with the same mandate hashes as U6; every suite passes in isolated mode.
+- **Covers:** R1, R4
+- **Files:** a throwaway delivery repo
+- **Depends on:** U6
+- **Status:** todo
+- **Tests:**
+  - happy: mandate hashes in U6 and U7 → identical. Covers AE4.
+  - edge: a mandate change forced by a generic defect → logged as an amendment and the U6 run is not invalidated.
+  - error: a suite of the practice track fails → the failure is traced to a room verdict or a missing check, not fixed by hand.
 
-**Sale** con una corrida que cumple los criterios del caso grande (salvo los de la corrida final: repo nuevo y un solo intento) y los mandates y el brief congelados con sus hashes SHA-256 (Operación: freeze).
+### U8. Extra verifier seat
+- **Goal:** the breaker (other provider) or the auditor (Claude Code) chosen by Decision 4, with its mandate, appearing in the roster and the recording, whose veto can block a stage.
+- **Covers:** R3
+- **Files:** `mandates/breaker.md` or `mandates/auditor.md`
+- **Depends on:** U7
+- **Status:** todo
+- **Tests:**
+  - happy: the extra seat posts a verdict on the practice track → the validator counts it.
+  - edge: a seat on another provider does not appear in the recording → fall back to an auditor on Claude Code.
+  - error: the extra seat and the reviewer disagree → the stage stays open until both accept.
 
-### F3 — Corrida final
+### U9. Real-track iteration and freeze
+- **Goal:** runs on tablekeeper until one reaches the target stage with every suite at 0.5 or more and no overshoot; the stage-2 UI follows `docs/DESIGN.md`; mandates and brief are frozen with their SHA-256 hashes.
+- **Covers:** R4, R10, R11
+- **Files:** `mandates/`, the tablekeeper brief, `docs/FACTORY-DESIGN.md` (amendment log)
+- **Depends on:** U7
+- **Status:** todo
+- **Tests:**
+  - happy: an iteration run's stage folders under the harness in isolated mode → each suite 1..N at 0.5 or more. Covers AE7.
+  - edge: the stage-2 UI at 375 px in every state the spec names → no horizontal overflow. Covers AE11.
+  - error: suite N+1 passes completely → the folder is flagged as overshoot before the freeze.
 
-- Preflight: los ítems de la corrida en el **Checklist de entrega** (Mac despierta, repo nuevo con remote y push), seats *bound*, `jam list`, ningún permiso en modo manual.
-- Un solo dispatch con las 4 etapas; sin intervención humana después.
+### U10. Room validator v2
+- **Goal:** the validator also compares the observed mention graph with the declared routing, counts ping-pong cycles against repair cycles, and separates errors from warnings.
+- **Covers:** R3, R9
+- **Files:** `tools/validate_room.py`
+- **Depends on:** U4
+- **Status:** todo
+- **Tests:**
+  - happy: an iteration recording → prints the mention matrix and cycle counts.
+  - edge: an undeclared mention edge → reported as an error.
+  - error: a slow handoff → reported as a warning, exit 0.
 
-**Sale** cuando la corrida termina. Si falla un gate, se repite en una ventana de cupo nueva y el toy de cierre de F4 pasa a ser opcional.
+### U11. Judged run
+- **Goal:** one clean run on tablekeeper in a fresh room and a fresh public repo, from one dispatch, with the frozen mandates and brief, and the machine awake throughout.
+- **Covers:** R4, R5 · F1
+- **Files:** the delivery repo
+- **Depends on:** U9
+- **Status:** todo
+- **Tests:**
+  - happy: the judged recording → exactly one human message and the validator exits 0. Covers AE5.
+  - edge: the run ends below the target stage → the reached stage is reported as is, with no rerun steering.
+  - error: a gate fails mid-run → the run is repeated once in a new usage window.
 
-### F4 — Empaquetado
+### U12. Packaging
+- **Goal:** the recording downloaded and redacted with the redaction recorded, the event checks and the package checks green on a fresh clone, and the practice track re-run with the frozen mandates as evidence of genericity.
+- **Covers:** R4, R7 · F4
+- **Files:** `room.json`, `evidence/`, the delivery repo
+- **Depends on:** U11
+- **Status:** todo
+- **Tests:**
+  - happy: a fresh clone under the harness check and the isolated run → both clean. Covers AE7.
+  - edge: a credential found in the recording → replaced and listed in the packaging record.
+  - error: a stage takes more than 30 s to report healthy in isolated mode → flagged before submission.
 
-- Descargar `room.json` de la console, redactar credenciales y registrar en `evidence/PACKAGING.json` (ítem 23).
-- Checks del paquete final (Contrato del runner) y validador sobre la corrida final.
-- Toy de cierre: el caso mediano re-corrido con los mandates congelados, evidencia de genericidad (ítem 14; la métrica del ítem 35 solo si sobra tiempo).
-- README y `FACTORY.md` a mano; ficha con `hackathon-submission`.
+### U13. FACTORY.md and README
+- **Goal:** hand-written `FACTORY.md` and `README.md` with the design, the seat table, the measured cost, the caught failures and the stage reached, every figure taken from a command; enough for another team to run the factory with a different brief.
+- **Covers:** R6, R7, R8
+- **Files:** `FACTORY.md`, `README.md` (delivery repo)
+- **Depends on:** U12
+- **Status:** todo
+- **Tests:**
+  - happy: each rejection in the recording → listed with finder, rejected commit and repairing commit. Covers AE9.
+  - edge: someone follows only `FACTORY.md` and `mandates/` with the small-case brief → starts the seats and dispatches without asking. Covers AE12.
+  - error: a figure in `FACTORY.md` differs from the cost command's output → fixed before submission.
 
-**Sale** con `harness check` y `harness run --all --mode isolated` limpios sobre un clon fresco y `docs/submission.md` dentro de los límites de cada campo.
+### U14. Submission, deck and video
+- **Goal:** the form text within limits, the PDF deck and a 3 to 4:30 min video that includes the room recording, a handoff, the blocking verdict and the running service; the form submitted.
+- **Covers:** — (delivery)
+- **Files:** `docs/submission.md`, `docs/deck.pdf`, the video file
+- **Depends on:** U13
+- **Status:** todo
+- **Tests:**
+  - happy: the video → shows the room, one REJECT and the service working, and lasts 3 to 4:30 min.
+  - edge: a form field over its limit → trimmed before pasting.
+  - error: the video lacks the room recording → not submitted until it is added.
 
-### F5 — Entrega
+### U15. Seat launch script
+- **Goal:** an idempotent script that creates the seats, the room and the participants from the mandates and fails if a declared model does not match the real one.
+- **Covers:** R8
+- **Files:** `tools/launch.sh`
+- **Depends on:** U1
+- **Status:** todo
+- **Tests:**
+  - happy: run twice → the second run creates nothing new.
+  - edge: the force-new-room flag → a fresh room for the judged run.
+  - error: a mandate declares a model the seat does not run → exits non-zero.
 
-- Deck con `hackathon-deck`, después de la ficha para no contradecirla.
-- Video con `personal-record-video` (3 a 4:30 min, con la grabación del room).
-- Formulario de lablab y auditoría con `hackathon-close`.
+### U16. Genericity metric and verdict hash chain
+- **Goal:** the distance between the mention graphs of the practice-track and judged runs as a published figure, and each verdict citing the hash of the previous one.
+- **Covers:** R1, R7
+- **Files:** `tools/validate_room.py`
+- **Depends on:** U10, U12
+- **Status:** todo
+- **Tests:**
+  - happy: two recordings with the same mandates → a small, reproducible distance.
+  - edge: a stage with a single verdict → no previous hash required.
+  - error: a missing verdict in the chain → reported by position.
 
-**Sale** con el formulario enviado y el **Checklist de entrega** completo.
-
-### Solo si sobra tiempo
-
-Ítems 21, 24 (si no entró por la Decisión 4), 35, 37, 39, 40; watchdog, worktrees, sobre de protocolo completo y el resto de "Esfuerzo medio" de Lecciones.
-
-## Casos de prueba de la fábrica
-
-Tres casos de tamaño creciente y en tres dominios distintos. El chico aísla las fallas de la fábrica (si falla un producto trivial, falla la coordinación); los otros dos suben la dificultad del producto. Correr los mismos mandates sobre los tres es la prueba de "Generic: another team could point your mandates at a different problem". Cada criterio nombra el comando o artefacto que lo prueba.
-
-### Chico — API de notas (F1)
-
-Problema propio de una etapa: CRUD de notas con create idempotente por `Idempotency-Key`, sin UI. Spec en `cases/small/SPEC.md` (formato de brief del ítem 14), checks escritos a mano desde la spec en `cases/small/checks.py` (stdlib). No se entregan: son nuestra suite de aceptación.
-
-| Capa | Criterio | Cómo se prueba |
+## Cut line
+| Tier | Units | Why |
 |---|---|---|
-| Producto | 100% de los checks | `python3 cases/small/checks.py http://localhost:8080` → exit 0 |
-| Producto | Contenedor sano en ≤ 30 s, también sin red | `docker build -f stage-1/Dockerfile stage-1/`; `docker run --network none -e PORT=8080` + `/health` |
-| Fábrica | Todos los seats hablan al menos una vez y hay `@` recíprocos | `harness check` sobre `room.json` + conteo de `senderId` |
-| Fábrica | Un solo dispatch, cero mensajes humanos después | `room.json`: mensajes con `senderType` humano = 1 |
-| Fábrica | Ciclo completo coordinador → builder → reviewer → veredicto | validador v1 |
-| Fábrica | Al menos un REJECT con reparación (si no ocurre, se inyecta un bug) | validador v1: rechazo con `refs=` a su SHA |
-| Fábrica | Un reinicio de seat sobrevivido sin identidades nuevas | `senderId` distintos antes y después del reinicio |
-| Fábrica | 100% de handoffs y veredictos con la última línea parseable | validador v1 |
-| Fábrica | Tiempo y tokens medidos: costo base de la fábrica | fuente de la Decisión pendiente 1 |
-
-### Mediano — track `toy` (F1)
-
-Contador compartido del kickoff: de práctica, sin puntaje, trae la suite completa. Las etapas salen de su spec; los tests no se leen.
-
-| Capa | Criterio | Cómo se prueba |
-|---|---|---|
-| Producto | Suite completa en cada etapa, modo aislado | `harness run --all --mode isolated` |
-| Producto | Paquete válido | `harness check` limpio |
-| Fábrica | **Los mismos mandates que el chico**; solo cambia el brief; todo cambio de mandate registrado como defecto genérico (regla 19) | `git diff` de `mandates/` entre corridas + log de enmiendas |
-| Fábrica | Mandates sin vocabulario de ningún dominio | grep de los términos de los tres casos sobre `mandates/`: vacío |
-| Fábrica | Handoffs con la spec completa pegada (en partes si hace falta) | lectura de `room.json` |
-| Fábrica | Todas las etapas en un solo dispatch; costo por etapa publicado en el room | `room.json` |
-| Fábrica | Breaker o auditor probado (Decisión 4) | el seat habla y su veredicto aparece en el validador |
-
-### Grande — track `tablekeeper` (F2 y F3)
-
-La entrega. Se itera en F2 y se corre una sola vez, limpia, en F3.
-
-| Capa | Criterio | Cómo se prueba |
-|---|---|---|
-| Producto | Cada suite 1..N ≥ 0,5, objetivo etapa 4, sin overshoot | `harness run --all --mode isolated` |
-| Producto | Checks del paquete final (health ≤ 30 s aislado, `--network none`, reset 204 < 10 s, sin binds locales, sin symlinks) | **Contrato del runner** › Checks del paquete final |
-| Fábrica | Todo el **Checklist de entrega** | checklist |
-| Fábrica | Override-rate 0 | `room.json`: un solo mensaje humano |
-| Fábrica | Al menos un hallazgo con su rastro ACCEPT/DISPUTE | validador v2 |
-| Fábrica | Validador v2 verde y `room.json` aceptado | validador v2 + `harness check` |
-
-## Setup propio de Lights-out
-
-**Modelos y cupo**
-- Todos los seats en **Claude Code con la suscripción Max**: no hay costo por token, pero los seats en paralelo comparten el cupo de uso.
-- Mezcla de modelos para estirar el cupo: el modelo más fuerte en el seat que construye; el de los que revisan, pendiente (ver **Decisiones pendientes**). Declarar el ID exacto en cada mandate.
-- Plan B: un seat en **OpenCode + key paga de Gemini** como revisor. Descarga cupo de Max y da diversidad real entre seats. Evitar el plan gratuito de Gemini en la corrida final, porque sus límites de requests pueden trabar un seat sin posibilidad de intervenir.
-- Plan C: un seat en **OpenCode + Featherless** como revisor, con los US$25 de créditos del evento (primeros 1.000 inscriptos, promo por mail; el alta pide tarjeta, cancelar antes del próximo ciclo). Modelos documentados en la guía: MiniMax-M2.5, Kimi-K2.5, DeepSeek-V3.2. Config en `~/.config/opencode/opencode.json`, nunca en el repo; `turn_timeout_s=900`; no corre en Docker Sandbox. Probarlo en el toy: si el seat no arranca, pasarlo a Claude Code sin depurar el runtime.
-
-**Costo**
-- Medir con el track **toy** cuánto consume una corrida completa de 4 etapas antes de ir al track real.
-- Lanzar la corrida final **al inicio de una ventana de uso limpia**.
-- Reportar el costo en `FACTORY.md` como tiempo y tokens; la fuente de los tokens está en **Decisiones pendientes** 1.
-
-**Mandates:** genéricos, reusables para otro problema. Nada del track: ni endpoints, ni campos, ni dominio.
-
----
-
-## Features de BAND a usar
-
-Relevado de las 190 páginas de https://docs.band.ai (índice `llms.txt`) el 26 sep 2026. La página de Desktop es corta: no documenta subcomandos del CLI `band`, las tools del plugin `band-peer` ni el formato de `room.json`. Casi todo lo operable está en la API REST y el SDK. MCP de las docs para los seats: `https://docs.band.ai/_mcp/server`.
-
-### Qué usamos y para qué criterio
-
-| Feature | Cómo | Para qué (criterio) | Fuente |
-|---|---|---|---|
-| Plugin `band-peer` en Claude Code | Se instala desde Desktop; después `/reload-plugins` o reiniciar Claude Code | Cada ventana de Claude Code es un seat (compuerta 1) | `/band-desktop` |
-| Onboarding `/jam` | En Claude Code: `/jam` + "Start a Band Desktop session as the architect…"; el architect crea el room e invita | Arranque genérico de seats, citable en `FACTORY.md` (Factory: reusable) | `/band-desktop` |
-| Sesión "bound" | Verificar que los 3+ seats estén *bound* (no *parked*) antes del dispatch | Evita handoffs a un seat ausente (autonomía) | `/band-desktop` |
-| Reattach | "Reattach this session to the existing architect peer." | Reiniciar un seat caído sin perder identidad (Factory: recuperación) | `/band-desktop` |
-| Ruteo por `@mention` | Solo el mencionado recibe; varios `@` despiertan a varios | Handoffs trazables (compuerta 2, Teamwork) | `/core-concepts/chat-rooms` |
-| `band_send_message` obligatorio | El texto plano del modelo es "internal thought", invisible | Regla dura en todo mandate: sin la tool no hay handoff | `/core-concepts/agents` |
-| Handoff autocontenido | Un agente no ve mensajes dirigidos a otros | Cada handoff lleva tarea + spec completas (lo exige también la guía) | `/core-concepts/chat-rooms` |
-| Descripción del seat en el roster | El roster inyectado incluye la descripción | Ruteo por rol; nombres de rol, nunca "Agent"/"Bot" | changelog SDK 23-ago |
-| Participantes dinámicos | `band_add_participant`, `band_get_participants`, `band_lookup_peers` | El coordinador suma a todos los seats antes del primer handoff | `/core-concepts/agents` |
-| Task board del room (**Beta**) | REST `POST /api/v1/agent/chats/{id}/tasks` (`subject`, `detail`); update con `status` `pending → in_progress → in_review → completed/failed`, `comment`, `linked_native_id` | Reparto visible con `#N`; `in_review → in_progress` con comentario = review que cambió el resultado; `linked_native_id` = SHA del commit. Sirve para **coordinar**: el board no llega a `room.json`, así que la evidencia para el jurado es la tabla `#N from→to SHA` publicada como `text` al cierre de cada etapa | `/api/agent-api/agent-api-chat-tasks` |
-| Historial de tasks | `GET .../tasks/{id}/history`, append-only con actor y `from → to` | Evidencia de reviews y reintentos | idem |
-| Goal del room | `PUT .../board` con `goal_title`, `goal_summary` | El coordinador fija la misión de la etapa | idem |
-| Evento `attention` tipo `assumption` | REST `POST /api/v1/agent/chats/{id}/events`, `metadata.kind=assumption`, no bloqueante | Registrar decisiones en vez de preguntarle al humano (autonomía). `attention` **no llega** a `room.json`: cada suposición se publica también como `text` y va al log de enmiendas (ítem 16) | `/api/agent-api` |
-| Renombrar room | tool `set_chat_title` | Nombrar el room por corrida | `/core-concepts/agents` |
-| Filtros de tools por seat | `include_tools`, `exclude_tools`, `include_categories` | Menos superficie por rol (reviewer sin crear rooms) | `/integrations/sdks/overview` |
-| `Emit.USAGE` | Tokens por turno (input/output/cache) como eventos en el room | Costos medidos dentro del room (Factory: costos) | `/integrations/sdks/reference` |
-| `Emit.TOOL_CALLS` / `THOUGHTS` | Tool calls y razonamiento en el timeline | Código trazable al room | idem |
-| Estados de entrega | `delivered/processing/processed/failed` por destinatario, con intentos | Evidencia de fallas y reintentos | `/core-concepts/chat-rooms` |
-| Indicador de actividad | Los adapters lo reportan solos; expira a ~10 s | Detectar un seat colgado | changelog SDK 22-jun |
-| Context para rehidratar | `GET /api/v1/agent/chats/{id}/context` | Un seat reiniciado recupera lo suyo (recuperación) | `/api/agent-api` |
-| Panel de Desktop | Board, swim lanes, usage, actividad | Tomas para el video (room + handoff) | `/band-desktop` |
-
-### Alternativas y descartes
-
-- **SDK headless (`ClaudeSDKAdapter`, `OpencodeAdapter`)**: para correr seats sin Desktop. Para autonomía: OpenCode con `approval_mode="auto_accept"` y `question_mode="auto_reject"` (por defecto ambos son `manual` y traban el seat). El runner Docker multi-agente (`agent_config.yaml` + `prompts/<role>.md`, ejemplo `examples/coding_agents/`) sirve de plantilla de fábrica genérica.
-- **`band-mcp`**: crea rooms y manda mensajes, pero **no recibe**. No sirve como seat, sí para un script de soporte.
-- **Memoria compartida** (`band_store_memory`…): requiere **Enterprise**. Descartada.
-- **Archivos del room** (`Capability.FILES`): "not yet available on Band SaaS". Descartada; los artefactos van por Git.
-- **Human API** (`/me/...`, historial completo por API): Enterprise. El `room.json` sale de la descarga manual de la console.
-- **Contactos**, sandboxes Copilot/NemoClaw, adapters de otros frameworks: no aplican.
-
-### Gotchas
-
-1. Una conexión WS por Agent ID, gana la última: dos procesos con la misma identidad se desconectan en silencio.
-2. Entrega *at-least-once*: un mensaje puede repetirse tras un crash, así que los efectos (commits) tienen que ser idempotentes.
-3. Tasks/board son Beta y solo REST (sin tool de SDK/MCP): el seat las maneja con `curl` y necesita su agent key fuera del repo. Probar en el toy antes de meterlas en un mandate.
-4. No figura si la descarga del room (Chat Export, tier **Pro** según changelog 9-jun) incluye tasks, board, usage o `attention`. Verificarlo en el `room.json` del toy; si no los incluye, el SHA también va en el mensaje.
-5. Requieren humano: login de Desktop, instalar/recargar el plugin, API keys (se ven una sola vez), readiness "Recheck", interrupt/stop/play. Todo antes del dispatch.
-6. OpenCode no chequea salud al arrancar: un puerto muerto aparece recién en el primer mensaje.
-7. Claude SDK sin `ANTHROPIC_API_KEY` responde "Not logged in" en cada turno y parece sano.
-8. Límites: `content` de eventos 16.384 caracteres (handoffs largos se parten en mensajes numerados), `metadata` 64 KB, 403 `limit_reached` por cuota de plan, 429 por rate limit.
-9. Desktop no soporta Windows. Renombres: Jam → Band Desktop (el daemon sigue siendo `jamd`, estado en `~/.jam`).
-
----
-
-## Diseño de la fábrica: ideas a adoptar
-
-Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates o `FACTORY.md`. Nada de esto se copia como código: los mandates siguen genéricos y lo del track va en el brief.
-
-### Esfuerzo bajo (mandates y FACTORY.md)
-
-1. **Aceptación antes que código.** El reviewer escribe y commitea su diseño de aceptación (sección de la spec → casos) antes de leer la implementación. Sus checks salen de la spec, nunca del código ni de los tests del builder.
-2. **Checklist de conformidad numerado `[C-nn]`.** Cada ítem atado a una sección de la spec y a un check. Veredicto por ítem: CONFORMS con `archivo:línea` o DEVIATES con esperado vs. actual. Un solo desvío rechaza el handoff. Las ambigüedades se marcan y van al coordinador.
-3. **Evidencia de recuperación.** Tabla en `FACTORY.md`: hallazgo → quién lo encontró → SHA rechazado → SHA de la reparación. Cada rechazo se preserva en `evidence/stage-N/rejection-NN.md` con pasos, esperado, actual y pasaje de la spec. Los errores de tooling o de test se registran aparte y no cuentan como defectos del producto.
-4. **Veredicto atado a SHA + tree hash.** Todo veredicto cita `sha=` y `tree=` (tree hash de la carpeta, `git rev-parse HEAD:stage-N`) en la última línea del ítem 26. El reviewer verifica que los tree hash de las etapas anteriores no cambiaron.
-5. **Release check.** Antes de aprobar una etapa: checkout limpio, build del contenedor, suites 1..N verdes y la suite N+1 **no debe pasar completa** (el harness solo invalida si pasa entera; la etapa 4 no tiene N+1). Después se congela la carpeta.
-6. **Diversidad de modelo como regla.** El verifier nunca corre el mismo modelo que el builder: dos instancias del mismo modelo se equivocan en lo mismo. Escrito como restricción en `FACTORY.md`, no como descripción.
-7. **Grafo de ruteo restringido.** El builder no menciona al auditor ni al humano; solo el coordinador habla con el humano; nadie tiene camino hacia su propia aprobación. `FACTORY.md` suma la sección "qué se rompe sin el room".
-8. **Ruteo por rol, no por handle.** Cada seat consulta los participantes y menciona al que tiene el rol destino (tabla emisor → condición → rol). Hace a los mandates re-armables con otros nombres.
-9. **Espera acotada.** Si un seat no responde en 10 min, se registra "unanswered wait", se lo re-agrega al room y se reintenta una vez; nunca se auto-aprueba. Prohibido reclutar agentes ajenos a la banda. Un bloqueo real se registra como resultado de la etapa y se para, sin preguntar.
-10. **"No reply requested".** Los mensajes de evidencia suplementaria lo dicen explícito para no disparar turnos inútiles (ahorra tokens).
-11. **Barrido de riesgos obligatorio en cada veredicto**: cada riesgo como confirmed-safe con `archivo:línea`, tested, accepted u open; un ACCEPT con riesgos `open` los lista como follow-up. Los hallazgos equivocados se retractan en público. El vocabulario de veredictos es el de **Vocabulario único** (abajo).
-12. **Ley de conservación.** Cuando el dominio tiene una cantidad que debe balancear, una aserción de invariante global es obligatoria al final de cada test de concurrencia; si falta, es blocker.
-13. **Gate de regresión.** Conteo base de tests: si baja, hay que explicar qué se borró. El gate nunca se pipea por `tail`/`grep` (el exit code miente) y nombra el paso que falló. Una suite sin línea de resultado se trata como colgada.
-14. **Brief separado de los mandates.** Plantilla Goal / Spec / Milestones / Constraints / Done state / Escalation ("una pregunta con default recomendado, nunca un menú"). El brief es reemplazable; los mandates no. Se demuestra corriendo los mismos mandates, ya congelados, con el brief del toy (toy de cierre, ver F4 en **Hoja de ruta por fases**).
-15. **Handoff con campos fijos.** Qué cambió, cómo se construye y corre, qué verificó el emisor, `open_failures`, `next_action`. Todo handoff delegado lleva **la tarea y la spec completas pegadas** (la guía oficial lo exige: "pointing at a room message id or asking a seat to read the room is insufficient"; el reviewer también recibe los requisitos completos). Si es largo, en partes numeradas con la última marcada "final"; nunca recortar requisitos. El costo de pegarla se controla con partes numeradas y la regla "un turno por unidad de trabajo", no referenciando.
-16. **Log de enmiendas A1..An.** Cada vez que un review cambia el plan queda una entrada fechada con la razón (se complementa con los eventos `assumption`).
-17. **Higiene del repo.** `.gitattributes` con LF (un CRLF rompe el Dockerfile y tira la compuerta 3); el servicio lee `PORT` con default `8080` y bindea `0.0.0.0` (con `127.0.0.1` no es alcanzable desde afuera del contenedor; el runner no pasa ninguna otra variable); sin paths absolutos del host, ids de room ni emails en docs.
-18. **Métricas de la fábrica.** Además de tiempo y tokens: tasa de rechazo por etapa y *override-rate* (veces que el humano tuvo que corregir), que en la corrida final tiene que ser 0.
-19. **Regla de restart en cada mandate.** Al reengancharse: anunciar el reattach, leer historia y plan, retomar el último ítem; el verifier re-corre el check en curso en vez de asumir su resultado.
-20. **Eventos vs. mensajes.** Solo el progreso descartable va como evento (no llega a `room.json`). Hallazgos, handoffs, veredictos y suposiciones van como `text`: son lo que leen el jurado y el validador.
-
-### Esfuerzo medio
-
-21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. **Ningún comando `jam plan`/`work`/`usage`/`agent create`/`chat` figura en las docs oficiales, la hacker guide ni el SDK**: verificarlos con `band --help` en la versión instalada antes de escribir el script.
-22. **Validador post-run.** Cruza `room.json` ↔ tasks ↔ commits: cada etapa cerrada tiene veredicto con SHA, cada SHA existe en el historial y cada rechazo tiene su reparación. Falla si queda algo huérfano.
-23. **Paquete de verificación final.** Clon público fresco → `harness check` → `harness run --all --mode isolated` → `evidence/verification-receipt.json` con comandos, exit codes y tiempos. `evidence/PACKAGING.json` con sha256, bytes y `exportedAt` de `room.json`, y `edited` en `false` solo si no hubo que redactar nada; si se redactó una credencial, se registra qué y dónde (redactar ya es editar). Audit de symlinks, gitlinks, `.git` anidado, credenciales en todo el historial y vocabulario del track en mandates.
-24. **Seat Spec Auditor** (opcional, suma un seat y costo). Solo lectura: matriz spec → código → check, busca faltantes y también extras no pedidos, firma por etapa y no por ítem para no llenar el room. El cierre de etapa requiere doble firma (verifier + auditor).
-25. **Ensayo general sobre el toy con criterios de aceptación de la fábrica.** Ruteo autónomo sin handles en el brief; al menos un rechazo que vuelve al builder (si no ocurre solo, se inyecta un bug a propósito); la fábrica sobrevive a un reinicio sin crear identidades nuevas; swim lanes grabables para el video.
-
-### De A2A y AGNTCY (relevado el 27 sep 2026)
-
-Ideas de protocolo tomadas de la spec de A2A (https://a2a-protocol.org), sus samples, los repos de la org `agntcy` y proyectos que los usan. Ninguno se adopta como transporte: BAND es obligatoria, y reemplazar el room falla el delete test.
-
-26. **Última línea parseable con estado cerrado.** Todo handoff y veredicto termina en la única línea de protocolo definida en **Vocabulario único** (abajo), seguida de `NEXT @<handle>` o `DONE`. `refused` es el receptor negándose a tomar un handoff (inválido o fuera de su rol), distinto de un REJECT del producto y de `failed`; `input-required` va al coordinador, nunca al humano. El protocolo se versiona como `factory-protocol/v1` en `FACTORY.md`. Es la versión barata del sobre de protocolo y lo que parsea el validador del ítem 22. Fuentes: SHADI AgentBridge "Line protocol" (`agntcy/shadi`), `TaskState` de `a2a.proto`, extensiones de A2A.
-27. **Rechazo tipado de un handoff incompleto.** El receptor valida los campos del ítem 15 antes de trabajar; si falta uno responde `STATE refused code=MISSING_FIELD details=[...]` y cierra el turno. Fuente: spec A2A §3.3.2 y §3.3.4.
-28. **ACCEPT / DISPUTE / CLARIFY por hallazgo.** El builder contesta cada `[C-nn]` rechazado: ACCEPT con el SHA de la reparación, DISPUTE con evidencia o CLARIFY. Un ACCEPT no cierra el hallazgo hasta que el reviewer lo re-verifica. Al tope de rondas decide el coordinador. Es el disenso visible que premian los jueces.
-29. **Grafo de menciones observado contra el declarado.** El validador saca las aristas rol→rol de las `@mention` en `room.json` y las compara con la matriz de capacidades: toda arista no declarada falla y nadie aprueba su propio SHA. Antes de correr, la tabla de ruteo no puede tener un camino a la autoaprobación. La matriz con conteos se publica como `text` y responde "a quién se dejó afuera". Solo el coordinador conserva `band_add_participant` (modelo del moderador de SLIM): **verificar en el toy si band-peer respeta filtros de tools**, documentados solo para el SDK. Fuente: `agent_to_agent_interactions.py` de `agntcy/telemetry-hub`.
-30. **Contador de ciclos.** Por etapa, las secuencias A→B→A→B sin SHA nuevo son ping-pong (ruido) y con SHA nuevo son reparaciones. Se publican los dos conteos: mide la regla anti-loop. Fuente: `cycles.py` de `telemetry-hub`.
-31. **Niveles de evidencia.** Columna en el evidence index: absent / declared / checked / demonstrated / attested; el validador cuenta solo demonstrated o más. Verificar al consumir: antes de construir sobre algo que otro afirmó ("tests verdes"), se re-corre ese chequeo. En un caso publicado, un "11/11 GREEN" eran 11 fallas.
-32. **Corte por plateau y por rol no mapeado.** Si la cantidad de checks fallados no baja en 2 rondas seguidas, se escala al coordinador sin esperar la quinta. Si una tarea no encaja en ningún rol de los mandates, se registra y se para; no se improvisa un rol. Fuente: tabla "Halt" de ASSEMBLY/CONVERGE (SHADI).
-33. **Brief versionado con acuse.** El coordinador publica el goal de la etapa como `brief@vN`; cada handoff lo cita en el campo `brief=` de su última línea, y el receptor lo repite en la suya. Un handoff con versión vieja se descarta, y un seat puede objetar con `CHALLENGE brief@vN <razón>` al coordinador. Fuente: patrón "shared intent registry" de CoffeeAGNTCY.
-34. **Roster activado y publicado en runtime.** Qué seats existen (con su mandate) se decide antes del dispatch (Decisión pendiente 4): `harness check` exige mandate de todo seat que habló, y un seat creado que nunca habla no lo rompe. En la corrida, el coordinador decide si **activa** al breaker o al auditor; al hacerlo publica SELF / COLLABORATE / HANDOFF con el motivo y qué trabajo se conserva, o una encuesta de roles con `ACCEPT role=<r> model=<m>` / `DECLINE <motivo>`, y cierra con `ROSTER stage=N rol=@handle…` como `text`. Solo seats de la banda (ítem 9). Es la señal "roster decidido en runtime" del delete test.
-35. **Genericidad medida por distancia de grafos.** Diferencia simétrica entre las aristas rol→rol del toy de cierre y de la corrida final, con los mismos mandates congelados y otro brief (un toy con mandates anteriores no sirve de comparación). Una diferencia chica prueba que la forma de la fábrica no depende del dominio; la cifra va a `FACTORY.md` y sale de un comando. Fuente: `graph_determinism_score.py` de `telemetry-hub`.
-36. **Una tarea terminal no se reabre.** La reparación es una tarea nueva con `refs=[#N@<sha-rechazado>]` en su última línea, y el validador sigue la cadena sin heurística. El board puede seguir usando `in_review → in_progress` para coordinar. Fuente: "Task Immutability" de A2A.
-37. **Contratos abiertos al cierre de etapa.** El coordinador publica las obligaciones pendientes (emisor, receptor, entregable, `close_loop_time`); la etapa no cierra con ninguna abierta.
-38. **Métricas del validador.** Tasa de recuperación autónoma = rechazos reparados y aceptados sin humano / rechazos totales (junto al override-rate del ítem 18). El validador separa errores (SHA inexistente, veredicto sin reparación: fallan) de warnings (latencia alta, ciclo de ruido: se reportan). El uso por etapa se publica con forma de spans (`step_id`, `parent_step_id`, seat, tokens, latencia): da el formato de la Decisión pendiente 1, no la fuente del número. Fuentes: `error_recovery_rate` de `agntcy/observe`, validación de OASF, extensión traceability de a2a-samples.
-39. **Cadena de hashes entre veredictos.** Cada veredicto cita en `prev=` el sha256 del veredicto anterior de la etapa; el validador detecta mensajes perdidos, cruzados o duplicados por la entrega at-least-once. Git encadena commits, no veredictos.
-40. **Retro post-run.** Al cerrar, el coordinador publica cambios genéricos propuestos a los mandates; no se aplican durante la corrida (regla 19) y alimentan la revisión entre ensayos.
-
-Descartado de estas fuentes: usar A2A, SLIM, Dir o SHADI como transporte; `auth-required`, interrupts con resume y approval gates humanos (steering); OAuth, DID, firmas y pagos (sin superficie en BAND); recruiter o descubrimiento fuera de la banda (ítem 9); varios builders compitiendo con voto (multiplica costo); orquestadores por turno (no pasan el delete test); métricas con LLM como juez (no reproducibles).
-
-### De zero-pi (relevado el 27 sep 2026)
-
-Paquete de flujo spec-driven para el agente pi (https://github.com/gonzalonicolasr/zero-pi): clarify → explore → plan → analyze → build → veredicto, cada fase como sub-agente de un orquestador. La arquitectura no se copia (orquestador por turno: falla el delete test); se toman reglas de proceso.
-
-41. **Veredicto `REPLAN` separado de `REJECT`.** Si el defecto es la interpretación de la spec o el plan, no el código, el reviewer emite `REPLAN` dirigido al coordinador, no al builder; el coordinador corrige el plan (enmienda del ítem 16) y re-delega. Evita rondas de reparación sobre un plan equivocado. Fuente: veredicto `replantear` de `prompts/phases/veredicto.md`.
-42. **Contador de rondas durable.** Las rondas de review de cada `task` se cuentan desde las líneas `STATE` del room, no desde la memoria del seat: un reinicio (regla 19) no devuelve el cupo de la regla 11. Fuente: `/zero-rounds` (`rounds.json`).
-43. **Tope de re-planes.** El segundo `REPLAN` de una misma etapa la cierra como "no verificada" y se registra como resultado (ítem 9), en vez de seguir girando. Fuente: gate `analyze` ("the second replan stops blocked/not verified").
-44. **Auditoría de calidad de tests.** El reviewer revisa los tests del builder además de correrlos: rechaza tautologías, loops que no afirman nada, tests solo de humo y asserts sobre detalles internos. Complementa los niveles de evidencia (ítem 31). Fuente: `prompts/support/strict-tdd-verify.md`.
-45. **Disciplina de tokens del revisor.** En el mandate de quien revisa: no releer un archivo que no cambió desde la última lectura y buscar solo dentro del repo (nunca desde `/` o `~`); el revisor suele ser el seat más caro. No baja la vara del veredicto. Fuente: `veredicto.md`.
-46. **Guard de proveedor en el preflight.** Verificar que cada seat de Claude Code corre con la suscripción Max y no con una API key paga (variable `ANTHROPIC_API_KEY` presente en el entorno del seat): el costo real cambia y el reporte también. Fuente: extensión `provider-guard`.
-47. **Specs por etapa como deltas con IDs estables.** El coordinador describe cada etapa como `ADDED / MODIFIED / REMOVED / RENAMED` sobre los requisitos de la anterior; los `[C-nn]` conservan su ID entre etapas, y un requisito renombrado mantiene el ID. Hace trazable la regresión (ítem 13) y la extensión sin inflado. Fuente: `/zero-sync` y "Spec deltas" del README.
-
-### Vocabulario único y última línea
-
-Un enum por nivel; ningún otro término de veredicto en mandates ni mensajes.
-
-| Nivel | Valores | Quién lo emite |
-|---|---|---|
-| Hallazgo `[C-nn]` | `CONFORMS` / `DEVIATES` | reviewer, auditor |
-| Respuesta a un hallazgo | `ACCEPT` / `DISPUTE` / `CLARIFY` (ítem 28) | builder |
-| Candidato (SHA) | `ACCEPT` / `REJECT` / `REPLAN` (ítem 41) / `INSUFFICIENT_EVIDENCE` / `BLOCKED` (reglas 12–13) | reviewer, breaker, auditor |
-| Handoff | `working` / `input-required` / `completed` / `failed` / `refused` | todo seat |
-
-Línea de protocolo, única y al final de cada handoff o veredicto (ítem 26); los campos que no aplican se omiten:
-
-```
-STATE <estado|veredicto> stage=N task=<key> sha=<sha> tree=<tree> refs=[#N@<sha>] prev=<sha256> brief=vN
-NEXT @<handle> | DONE
-```
-
-Es la referencia de estado de la regla 5 y reúne lo que piden los ítems 4, 33, 36 y 39. El ACCEPT del builder a un hallazgo y el ACCEPT del reviewer a un candidato se distinguen por el nivel: el primero lleva `[C-nn]`, el segundo `sha=`.
-
-### Gotchas operativos de Jam (no están en las docs; comandos sin verificar con `band --help`)
-
-- Una mención a un seat con el runtime parado es un no-op silencioso: `jam list` antes del dispatch es parte del preflight.
-- `room send` devuelve 404 hasta que el humano es participante del room.
-- `jam restart` no revive un peer parado, y Jam no recoge procesos `claude` huérfanos: revisarlos entre corridas.
-- El timeout de una aprobación humana hace auto-deny: en la corrida final no puede quedar ningún permiso en modo manual.
-- `jam plan set --snapshot` / `jam plan diagram` publican el plan en el room (re-ejecutar tras cada edición); `jam usage` da el consumo.
-- Pegar la spec completa en cada handoff es obligatorio (guía oficial), pero en una corrida real (decenas de KB por mensaje, turnos de horas) disparó compactaciones de contexto y mensajes cruzados: se mitiga partiendo en mensajes numerados y cerrando el turno después de cada handoff, no dejando de pegarla.
-- Los eventos `room_tasks` por WebSocket están detrás del flag `ff_room_tasks` y el SDK Python no los auto-une: nadie recibe push de cambios del board.
-- Codex arranca con `approval_mode="manual"`, y con `approval_timeout_decision="decline"` un timeout termina en rechazo.
-
----
-
-## Contrato del runner (harness del evento)
-
-Leído de `harness/*.py` del repo oficial, sin abrir los tests de los tracks. Es formato, no contenido.
-
-### Lo que el servicio tiene que cumplir
-
-| Regla | Detalle |
-|---|---|
-| Puerto y bind | `0.0.0.0:8080`; el runner pasa **solo** `PORT=8080`. Un bind a `127.0.0.1` falla en los dos modos |
-| Health | `GET /health` → 200, JSON `{"status":"ok"}`, sano en **< 60 s** desde `docker run`. En modo aislado cada intento del health es un contenedor nuevo del runner, así que el margen real es menor: apuntar a ≤ 30 s |
-| Reset | `POST /_test/reset` → **204**, síncrono, < 10 s |
-| Sin red en runtime | Nada de instalar, migrar descargando ni recursos de CDN en la UI: el browser también corre en la red interna |
-| Sin config externa | Ninguna variable salvo `PORT`: todo con default dentro de la imagen |
-| Recursos | 2 vCPU / 2 GiB. Desde la etapa 2 corren **dos contenedores a la vez** (N y N-1, en la misma red) para probar upgrades: una etapa anterior que no levanta tumba a la siguiente |
-| Build | `docker build -f stage-N/Dockerfile stage-N/`, timeout 30 min. Nada de `COPY ../`, symlinks ni submódulos (`check` no los detecta) |
-| Timeouts | 5 s por request, 900 s por suite. Ráfagas de hasta 50 hilos liberados juntos: subir el backlog de escucha |
-| UI | Selectores solo por `data-testid`, 10 s por acción, contexto nuevo por test |
-| Errores | El helper compartido espera la forma `{"error":{"code","message"}}` |
-| Arquitectura | El jurado puede buildear en amd64: nada de binarios de arquitectura fija |
-
-### Cómo cuenta
-
-- `pass_rate` es el **promedio de la tasa de acierto por archivo de test**, no el total de checks. Una carpeta reclama su etapa si **cada** suite 1..N llega a 0,5.
-- Overshoot: si la carpeta ya reclama, corre la suite N+1 con `-x`; si pasa **completa**, `claimed_stage` queda en `None`.
-- Los jueces tienen un módulo `quality` (no incluido) que mide la **trayectoria de calidad entre etapas**: *erosion* y *verbosity*. El reviewer vigila que cada etapa extienda el código sin inflarlo.
-- No existe `harness export-room`: `room.json` se baja a mano de la console.
-
-### Lo que valida `harness check`
-
-- `README.md`, `FACTORY.md`, `stage-1/`; carpetas `stage-[1-4]` exactas; `Dockerfile` y `RUN.md` por carpeta; sin `.git` adentro.
-- `mandates/*.md` de primer nivel, ≥ 3. `Harness:` y `Model:` al inicio de línea (acepta `**Harness:**` o `- Model:`; falla en un heading, en una tabla o vacío). **No** compara contra el modelo real.
-- Vocabulario: tokeniza cada línea del mandate (rutas, snake_case, kebab-case) y falla con coincidencia **exacta** contra la lista del track. Términos genéricos como `/health`, `idempotency-key`, `data-testid` o `stage-1` no están.
-- `room.json`: objeto con `messages[]` y `scope` ausente o `"full"`. Seats = remitentes con `senderType` agent, ≥ 3 distintos por `senderId`. **Todo agente que habló necesita mandate** (slug de `senderName` sin no-alfanuméricos = nombre del archivo); dos seats con el mismo nombre visible colapsan en uno.
-- Reciprocidad: solo mensajes `text` de agentes con `@[[<senderId>]]` literal. Una mención dentro de un tool call no cuenta.
-- Credenciales en `.md .py .txt .json .yml .toml .env .js .ts .sh` y afines (no mira `.html .tsx .jsx .css`): `bearer <token>`, `sk-…`, `AKIA…`, `gh[pousr]_…`, `://user:pass@`, y `*KEY|TOKEN|SECRET|PASSWORD=` en archivos de config. Un `curl` con `Authorization: Bearer` en la salida de un tool dentro de `room.json` **hace fallar el check**.
-
-### Checks del paquete final (se suman al ítem 23)
-
-1. `harness check` y `harness run --all --mode isolated` sobre un clon fresco; ninguna carpeta en overshoot.
-2. Tiempo hasta `/health` sano por etapa en modo aislado (≤ 30 s).
-3. `docker run --network none -e PORT=8080` por etapa → `/health` 200.
-4. `POST /_test/reset` → 204 en < 10 s.
-5. Grep de binds a `127.0.0.1`/`localhost` en el código servido.
-6. `find . -type l`, `git submodule status`, `find stage-* -name .git`, `git ls-files -s | grep ^160000`: todo vacío.
-7. Scan de credenciales sobre `git log -p` completo, incluyendo `.html .tsx .css`.
-8. Ningún `._*` de macOS en el repo (rompen el build y el gate 1): `COPYFILE_DISABLE=1`, `._*` en `.dockerignore`, repo en disco interno, no en exFAT.
-
----
-
-## Lecciones de una corrida real y de la guía de BAND
-
-Sacadas del `room.json` público de otra fábrica (3 seats, 4 etapas, 2.896 mensajes, 3 h 43 min), del ejemplo `examples/coding_agents` del SDK, del orquestador oficial `band-ai/codeband` y de la hacker guide (https://www.band.ai/hacker-guide).
-
-### Qué evalúa el jurado según BAND: el delete test
-
-"Take the room out of your design. Does the app still work? If it does, you've built a single-agent app with a chat log attached" — y "it's what hackathon judges look for". Hay que mostrar al menos una, idealmente dos o tres, de estas señales:
-
-- **Handoff dependiente**: el trabajo del segundo seat cambia por lo que encontró el primero, no por su texto pegado.
-- **Roster decidido en runtime**: el coordinador recluta según la necesidad.
-- **Un límite que BAND hace cumplir**: quién puede mencionar a quién.
-- **Un veredicto que puede bloquear**: la conclusión de un seat no sale porque otro dijo que no.
-
-No cuenta: mensajes de estado que nadie necesita leer, un proceso cambiando de persona, un orquestador propio llamando agentes por turno (el room queda como transcript de decisiones ya tomadas), un dashboard como entregable.
-
-La presentación responde cuatro preguntas: el equipo; quién le habla a quién, **incluido a quién se dejó afuera de una mención y por qué**; un flujo típico de punta a punta; y qué se rompe sin el room. La línea de flujo con flechas se escribe antes de grabar la demo.
-
-### Qué llega realmente en `room.json`
-
-- Llegan `text` (completos), `tool_call` (args cortados a ~4,3 KB), `tool_result` (salida cortada a ~4 KB), `thought` (completos) y eventos del runtime (turnos, compactaciones, respawns). `metadata.deliveryStatus` trae `deliveredAt`/`processedAt` por destinatario: mide la latencia real de cada handoff.
-- **No llegan** tokens ni usage, `attention`, memoria ni el estado del task board.
-- Por eso: al cerrar cada etapa, el coordinador publica un `text` con el uso medido y la tabla de tareas `#N from→to SHA`. Cada corrida de checks imprime primero una línea resumen (pasados, fallados, SHA, segundos) y el veredicto la copia textual.
-- Los thoughts se leen: idioma fijo (inglés) y que digan qué se va a verificar.
-
-### Reglas para los mandates
-
-1. **Plantilla por rol**: Own / Do not / Use / Escalate / Done means. *Escalate* va al coordinador, nunca al humano durante una corrida (ver ítem 9). Incluye "no afirmar que los tests pasan sin haberlos corrido".
-2. **Bloque anti-loop**: mencionar es llamar a una función; los acks van sin `@`; silencio después de un handoff; nada de "ready and waiting" o "standing by"; nombrar sin `@` a quien no tiene que actuar.
-3. **Un turno por unidad de trabajo**: mandar el handoff y cerrar el turno; nunca seguir con la etapa siguiente en el mismo turno. Un seat publica su respuesta recién al cerrar el turno: turnos de 1–2 h produjeron respuestas con hasta 72 min de atraso, un handoff cruzado y una reparación delegada dos veces.
-4. **Handoffs sin esperar respuesta**: un envío que bloquea esperando contestación, con un trabajo de más de 10 min del otro lado, dejó a un coordinador 74 min parado con 6 timeouts.
-5. **Cada mensaje dice a qué estado responde** (campos `stage=` y `sha=` de la última línea, ver **Vocabulario único**); el receptor descarta en silencio lo anterior al último veredicto que conoce.
-6. **Antes de pedir un handoff, mirar el board**: el handoff se registra también como transición de la tarea con el SHA.
-7. **Un solo dueño de la reparación**: el REJECT va del reviewer al builder y el coordinador no re-delega.
-8. **El coordinador no reenvía contenido**: el emisor le habla directo al destinatario. Antes de pasar un reporte, el coordinador lo verifica con un comando.
-9. **Archivos con un solo dueño** (`notes/plan.md` del planner, `notes/review.md` del reviewer) para el detalle extra: evidencia, logs, diseño de aceptación. **No reemplazan** a la spec pegada en el handoff (ítem 15): los requisitos siempre van en el mensaje.
-10. **`task_key`** kebab-case (≤ 32 caracteres) en cada mensaje, branch y commit.
-11. **Tope de 5 rondas de review por ítem**; el coordinador interviene antes si se repite el mismo fallo.
-12. **Regla de evidencia del crítico**: una afirmación sin un hallazgo publicado en el room recibe `BLOCKED` con la evidencia faltante; para el coordinador un `BLOCKED` es terminal hasta resolverse. Vara: "¿bloquearía este merge?".
-13. **Veredicto `INSUFFICIENT_EVIDENCE`** separado de REJECT: separa "producto mal" de "evidencia incompleta".
-14. **Un candidato corregido es nuevo**: no hereda la aceptación; se re-corren primero las pruebas que fallaron y después la regresión.
-15. **El verifier pierde autoridad si edita producción**, y arranca siempre del commit declarado, nunca de un workspace sin commitear. Registra limitaciones aunque acepte.
-16. **El breaker entrega la lista de lo que no probó** y rechaza si el éxito depende de estado del entorno no declarado.
-17. **Prioridad de cola del coordinador**: falla bloqueante → candidato esperando verificación → aclaración → snapshot → siguiente etapa → pulido.
-18. **Guard de branch antes de editar**: branch correcto, `HEAD` esperado y `git status --short` limpio; si no, escalar con el estado concreto, nunca con un "I stopped" genérico.
-19. **Mandates congelados**: solo se revisan por un defecto genérico de la fábrica, nunca por la tarea, y cada revisión queda registrada.
-20. **Auto-test de genericidad por oración** ("¿tiene sentido para un editor de documentos o una cola de mensajes?") más una lista de huellas prohibidas: sustantivos de dominio y umbrales numéricos.
-21. **No comprimir texto para que entre** (borrar espacios lo vuelve ilegible): si es largo, se parte.
-
-### Verificación que atrapa lo que las suites no ven
-
-- En la corrida analizada, **4 de los 5 rechazos salieron de pruebas de caja negra del coordinador**, mientras las suites propias del reviewer (75 grupos, 2.585 llamadas) y las oficiales (120/120) daban verde. Se formaliza: el coordinador prueba casos extremos mientras el reviewer revisa, y el reviewer reproduce cada uno antes de rechazar.
-- Categorías que se escaparon y van al checklist adversarial: profundidad y tamaño de input, IDs opacos con caracteres codificados (`%2F`), textos largos sin espacios a 375 px, UI que queda vieja después de un cambio del servidor, persistencia tras reiniciar el contenedor.
-- La review es el cuello de botella (4–19 min contra 3–4 min de reparación): FACTORY.md reporta latencia handoff → veredicto y rechazo → reparación, sacada de `deliveryStatus`.
-
-### Operación
-
-- **Un solo dispatch con las 4 etapas**; un segundo mensaje humano entre etapas cuenta como intervención.
-- **Preflight del seat**: herramientas verificadas (`rg` faltaba en los 3 seats), hoja de comandos del CLI en el brief (hubo 7 `--help` y 7 greps fallidos buscando subcomandos), MCP no usados desactivados (11 fallas por respawn) y nada de `sleep` como espera (108 eventos de ruido).
-- **Freeze antes del dispatch**: tabla PASS/BLOCKED con los hashes SHA-256 de cada mandate y del brief; un valor sin verificar bloquea el dispatch.
-- **Matriz de capacidades por seat** en FACTORY.md: quién escribe producción, quién acepta, quién habla con quién.
-- **Evidence index**: criterio → etapa → comando → archivo → PASS/FAIL, para que el jurado no lea logs.
-- **Handoff con `evidence[{path, sha256}]` y `assumptions`** (extiende el ítem 15).
-- **Roles forzados por permisos, no solo por prompt**: escritura limitada por path (el reviewer escribe solo en tests y evidencia).
-- **Descripción del seat con tokens** `role=<rol> harness=<…>` para reclutar con `band_lookup_peers` por rol.
-
-### Esfuerzo medio
-
-- **Watchdog determinista sin LLM**: consulta REST, umbral de inactividad por rol, un nudge y una escalada, sin volver a molestar a un seat que confirmó estar vivo. Pasa la espera acotada del ítem 9 de prompt a código.
-- **Worktree por seat sobre un clon compartido**: reviewer y planner en detached HEAD de solo lectura, builder en su branch. El veredicto queda atado al SHA por construcción.
-- **Máquina de estados por etapa** (`active / paused / human_owned / closed`), anunciada al room; cada seat la consulta antes de actuar.
-- **Sobre de protocolo con id de correlación** (`protocol code_review cid cr_<n>_r<round> state … from X to Y`) como evento del room o JSONL append-only: insumo del validador del ítem 22.
-- **Índice de contexto del repo** (`structure/patterns/dependencies.md`) regenerado solo si cambia HEAD e inyectado en el prompt: menos exploración por seat.
-- **`TASK.md` + `.state.json` por seat** para rearmar contexto tras un reinicio (git log + cambios sin commitear + tarea).
-- **Ledger de ids de agentes creados** (`.agent_ids.txt`) y rechazo a sobrescribir la config sin `FORCE=1` en el script de lanzamiento.
-- **Seat breaker en otro proveedor vía SDK** para diversidad real de modelo. Riesgo: confirmar en el toy que aparece en el roster y en `room.json`, y que su modelo coincide con el `Model:` del mandate.
-
-### Descartado
-
-- Pasos humanos durante la corrida (aclaraciones, QA humano realimentado, pedidos de pulido): es steering.
-- Meter arquitectura o valores de prueba en el brief: el brief es la spec oficial más `docs/DESIGN.md`. El design system es la única excepción, decidida el 26 sep, y se declara en `FACTORY.md` como insumo del dispatch.
-- Reglas de fuentes no oficiales (licencia cerrada obligatoria).
-- **Jev de TypeSafe** (modelo "System One": decisiones tipadas con probabilidad calibrada, https://typesafe.ai/blog/introducing-system-one-models-and-jev), evaluado el 27 sep 2026: no puede ser seat (no es agente de código); clasificar veredictos y detectar seats colgados ya se resuelve determinista (ítem 26, watchdog sin LLM) y un número probabilístico choca con "todo número sale de un comando"; early access con waitlist desde el 26 sep, propietario, cifras autorreportadas. Candidato a guardrail barato fuera del hackathon.
-
----
-
-## Entrega en lablab: lo que premian los jurados
-
-Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band of Agents Hackathon** (jun 2026, mismo sponsor, 391 proyectos). Cada página de proyecto trae `eventPosition` y las reviews de los jueces son públicas, con puntaje por criterio y a veces con comentario.
-
-### Qué separa a los ganadores
-
-- **El mecanismo, no la etiqueta.** Los jueces de BAND castigan nombrarlo en los tags sin mostrar la coordinación ("unclear how Band is used", 10/20) y premian una frase explícita del tipo "Remove Band and the chain collapses" ("exactly how Band should be used"). Es el delete test.
-- **Un agente que objeta a otro**: disenso, veto, red team, observer que se corrige, gate humano. Un pipeline fijo de roles (PM → Architect → QA) les pareció poco ("competes with model progress").
-- **Números verificables**: antes/después de tiempo, cantidad de tests, agentes × frameworks, hashes o `jsonl` de auditoría. Cada cifra rastreable en el repo; lo inferido se rotula "inferred".
-- **"Nothing is mocked"** con la fuente de cada dato.
-- **Diagrama de arquitectura** en deck y README: un 1° puesto perdió puntos de presentación por no tenerlo.
-- **Commits repartidos en la ventana del evento** (ganadores: 93, 39, 28). "An empty repo with one final push raises red flags".
-- **UI cuidada**: aparece explícita en los comentarios ("Great UI", "user persona and journeys are well explained").
-- Lo que resta: long description vacía o genérica, video incompleto, deck de 4 slides "too limited", error en vivo durante la demo.
-
-### Ficha
-
-- **Título** (≤ 50): nombre + promesa después de dos puntos o raya ("<Nombre>: <qué hace la fábrica>").
-- **Short** (230–255): una escena y un resultado, no la tecnología. Por ejemplo: entra una spec, un seat la entrega a otro, otro la rechaza, sale un servicio verificado.
-- **Long** (~1800 de 2000), en cuatro bloques: problema con una cifra dura → la fábrica paso a paso con los seats → qué no está simulado → por qué sin BAND se cae.
-- Los ganadores usan casi todo el límite de cada campo.
-
-### Video
-
-- **3 a 4:30 min**: la rúbrica de lablab baja la presentación por debajo de 3 min, y más de 5 no suma (mediana de ganadores ~4 min, rango 95–326 s).
-- Estructura: problema en 30 s → room de BAND con los seats en vivo → el handoff marcado en pantalla → el rechazo que cambió el resultado → el servicio funcionando → costo, falla atrapada y etapa alcanzada.
-- "Judges reward clarity over production value." La mayor parte del tiempo, el producto funcionando.
-
-### Deck
-
-- **8–10 slides**, 2–3 oraciones por slide, mucho diagrama.
-- Arco: claim → problema con cifra → diseño de la fábrica (diagrama de seats y handoffs) → los seats y sus modelos → la falla atrapada con el disenso textual → costo medido → "sin mocks" → por qué BAND → outcome con links a GitHub y al video.
-
-### README
-
-- Diagrama mermaid de la fábrica, elenco de seats, cómo correrlo, cómo reproducir una etapa.
-- Sección **"How it maps to the judging criteria"**: Factory 50%, App 25%, Agent Teamwork 25%, cada uno con su evidencia.
-
-### Fuentes
-
-- Rúbrica de lablab (1 a 5 por criterio): https://lablab.ai/hackathon-rules
-- https://lablab.ai/delivering-your-hackathon-solution: el video arranca con una introducción, pasa por el PDF y después muestra el producto.
-- https://lablab.ai/guide/how-to-win-an-ai-hackathon
-
-## Decisiones pendientes (resolver en F1, casos chico y mediano)
-
-1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `jam usage` no está verificado; `room.json` no trae usage. Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa. Candidata sin verificar: los transcripts de cada seat de Claude Code (`~/.claude/projects/<proyecto>/<sesión>.jsonl`), que registran `usage` por mensaje; sumarlos por seat y por ventana de etapa con un script, confirmarlo en el caso chico contra lo que muestra Claude Code.
-2. **Cómo se crean los seats.** Onboarding manual con `/jam` desde Desktop, script headless (ítem 21, comandos sin verificar) o seats SDK para OpenCode (Plan B/C). Elegir uno para la corrida final y documentarlo en `FACTORY.md`.
-3. **Qué modelo va en el seat que verifica.** El setup sugiere modelos livianos en los que revisan, pero en la corrida analizada la review fue el cuello de botella y la verificación de caja negra encontró 4 de 5 defectos. Diversidad de modelo sí (ítem 6); modelo más débil en quien verifica, solo si el toy muestra que alcanza.
-4. **Qué seats suma la fábrica además de los tres base.** El toy arranca con coordinador (también planifica: parte la spec en tareas del board y lleva el log de enmiendas), builder y reviewer. Candidatos, en orden de prioridad:
-   - **Verificador de caja negra (breaker)**, idealmente en otro proveedor (Plan B/C): prueba casos extremos y la checklist adversarial contra el servicio corriendo, con poder de veto. Es donde salieron 4 de 5 defectos en la corrida analizada. Se suma si en el toy se escapan defectos que el reviewer no ve.
-   - **Auditor de spec** (ítem 24): solo lectura, matriz spec → código → check, detecta faltantes y extras, doble firma de cierre de etapa. Se suma si el cupo lo permite después del breaker.
-   - **Planner separado: descartado por ahora.** No es el cuello de botella (la review sí), suma cupo y un salto por handoff, y un pipeline fijo de roles puntúa bajo con los jueces. Solo se reconsidera si el toy muestra al coordinador saturado, y en ese caso con un plan que el reviewer o el breaker puedan rechazar antes de construir.
-5. **Repo del entregable y quién pushea.** BAND no integra GitHub ni guarda archivos: solo lleva mensajes. Los seats corren en la Mac (Claude Code con `band-peer`) y usan `git` con las credenciales locales; en el room viajan referencias (`stage=` y `sha=` en la última línea). El entregable vive en un **repo público nuevo** creado para la corrida final; `lights-out` queda como workspace (plan, docs, ensayos). Por defecto los seats pushean al cerrar cada etapa, así el historial muestra commits repartidos y no un push final único. Si los seats se crean con script (ítem 21), el `remote` y los permisos de push quedan configurados antes del dispatch. Ningún seat imprime tokens de GitHub en la salida de un tool: quedarían en `room.json`.
-
----
-
-## Plan
-
-| Cuándo | Qué |
-|---|---|
-| sáb 26 – dom 27 sep | Inscribirse en lablab. Crear cuenta BAND, instalar Desktop + CLI + plugin, readiness check. Unirse a los dos Discord. Leer las specs completas. Track elegido: **tablekeeper** (26 sep) |
-| lun 28 – mar 29 sep | F0 y F1: diseñar la fábrica con el alcance de F1 (roles, mandates, protocolo de handoff y review). Correr el caso chico y después el **toy** completo en modo aislado; medir tiempo, tokens y cupo. Resolver Decisiones pendientes 1–5 |
-| mié 30 sep – vie 2 oct | Iterar sobre el track real: etapas 1–4, ajustar mandates según las fallas. Vie 2 oct: **congelar mandates** (hashes SHA-256) |
-| sáb 3 oct | **Corrida final**: room y repo nuevos, autónoma, al inicio de una ventana de cupo |
-| dom 4 oct | `harness check` + suites en modo aislado. Descargar `room.json` a mano de la console de Band (**Download full session**; no hay comando) y redactar credenciales. Validador post-run. **Toy de cierre** con los mandates congelados, en paralelo (evidencia de genericidad, ítems 14 y 35). Escribir README y FACTORY.md a mano. Ficha con `hackathon-submission` |
-| lun 5 oct | Deck (`hackathon-deck`, después de la ficha para no contradecirla) y video. Enviar el formulario antes de la noche (cierre mar 6 oct 03:59 ART) |
-
----
-
-## Checklist de entrega
-
-- [ ] Inscripto en lablab, con Discord conectado y equipo propio creado como admin (sin eso *Submit Project* queda gris)
-- [ ] 3+ seats, cada uno con `mandates/<seat>.md` que empieza con `Harness:` / `Model:`
-- [ ] Mandates sin vocabulario del track
-- [ ] `@handle` recíprocos visibles en el room
-- [ ] Corrida final en room y repo nuevos, sin intervención después del dispatch
-- [ ] Mac enchufada, despierta (`caffeinate -dimsu`) y con red estable durante toda la corrida; sin otra carga pesada en paralelo
-- [ ] Repo público del entregable creado, con `remote` y push configurados antes del dispatch
-- [ ] `stage-1..4/` con `Dockerfile` + `RUN.md`, cada una copia extendida de la anterior, sin `.git` anidado
-- [ ] Ninguna línea de código escrita a mano en `stage-N/`
-- [ ] Suites en `--mode isolated` corridas por etapa; `harness check` limpio
-- [ ] `room.json` sin editar, salvo credenciales redactadas con `[REDACTED]` y registradas en `evidence/PACKAGING.json` (redactar ya es editar)
-- [ ] `README.md` y `FACTORY.md` escritos a mano: diseño, costo, falla atrapada, etapa alcanzada
-- [ ] Repo público, clonable sin cuenta de BAND
-- [ ] Cada `stage-N/` sirve en `0.0.0.0:$PORT` (8080), `/health` → `{"status":"ok"}` en ≤ 30 s, `POST /_test/reset` → 204
-- [ ] `docs/DESIGN.md` declarado en `FACTORY.md` como insumo del dispatch
-- [ ] Video `.mp4`/`.mov` **subido**, de 3 a 4:30 min, con la **grabación del room** (sin ella, descalificación), un handoff y el servicio funcionando
-- [ ] Deck en **PDF** de 8–10 slides
-- [ ] Formulario de lablab enviado antes del **mar 6 oct 03:59 ART**
+| must | U1, U2, U3, U4, U5, U6, U7, U9, U11, U12, U13, U14 | eligibility, the blocking verdict, the measured cost and the submission; without them there is no entry |
+| should | U8, U10 | a second verifier and the mention audit strengthen Teamwork but the three base seats already meet the gates |
+| cut | U15, U16 | seats can be created by hand; the genericity figure and the hash chain add evidence but no requirement is left uncovered |
+
+## Risks
+- No rejection happens in the judged run — likelihood: media — mitigation: acceptance-first checks written before the build (U2), rehearsed on U6 and U7 — fallback: the video shows the rejection from the practice-track run, labelled as such, and `FACTORY.md` reports the judged run honestly.
+- Shared Max usage runs out mid-run — likelihood: media — mitigation: measure U6 and U7 cost with U5 and start U11 at the beginning of a clean window — fallback: plan B seat on paid Gemini for a verifier.
+- A seat stalls on a permission prompt or a dead peer — likelihood: media — mitigation: preflight with no manual approvals and a bounded wait rule in the mandates — fallback: the stall is recorded as the stage result, no human input.
+- Token usage cannot be read per seat — likelihood: baja (transcripts carry usage; only the desktop-launched location is unconfirmed) — mitigation: U5 reads the transcripts, deduplicated by message id — fallback: time plus partial tokens, labelled partial.
+- The `band` CLI subcommands in the design doc do not exist — likelihood: alta — mitigation: U1 verifies them before anything depends on them — fallback: manual seat creation from the desktop app (U15 is cut).
+- A credential ends up in the recording — likelihood: media — mitigation: no seat prints auth headers — fallback: redaction recorded in U12.
+
+## Out of scope
+- Using A2A or AGNTCY as the transport between seats.
+- Automatic model tuning from past runs.
+- Typed-decision models as guardrails.
+- Moving the test cases into a standalone use-cases document.
+- The pocketful track, an orchestrator that calls agents in turn, a dashboard as the deliverable.
+- Cut in this plan: the seat launch script (U15) and the genericity metric with the hash chain (U16).
