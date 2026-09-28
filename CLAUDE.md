@@ -23,6 +23,9 @@ python3 cases/small/checks.py http://localhost:8080
 # room validator: protocol lines, commits, non-author ACCEPT, repairs, one human message
 python3 tools/validate_room.py <result>/room.json <result>
 python3 tools/validate_room.py --self-check
+# cost meter: tokens per seat inside a stage window (seat alone resolves its sessions via band usage)
+python3 tools/measure_cost.py <start-iso> <end-iso> coordinator builder reviewer
+python3 tools/measure_cost.py --self-check
 # gate before submitting: package check, offline
 cd ~/Documents/dark-factory-wearedevs && .venv/bin/python -m harness check <result> --track tablekeeper
 # docs gate: brief, plan and use-cases traceability

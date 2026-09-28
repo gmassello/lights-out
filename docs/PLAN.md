@@ -75,7 +75,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R6
 - **Files:** `tools/measure_cost.py`
 - **Depends on:** U1
-- **Status:** todo
+- **Status:** done (28 sep) — `tools/measure_cost.py`, stdlib only. `band usage` filters by date only, so the stage window comes from the transcripts (main session plus `subagents/`), counted once per `message.id`; `band usage sessions --agent <seat> --json` maps each seat to its sessions and its whole-session totals are printed next to the transcript's as match or mismatch. `--self-check` covers a split id, an idle seat, a transcript without usage (partial, exit 0) and an id outside the window; a per-line mutation fails it; on this session a closed window matches an independent sum. Still for U6: the band comparison on real seats (no named agent has sessions yet).
 - **Tests:**
   - happy: the small-case transcripts and the stage window → totals that match `band usage` for the same seats. Covers AE8.
   - edge: a message split across several transcript lines with one id → counted once, not per line.
