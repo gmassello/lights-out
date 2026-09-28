@@ -63,50 +63,7 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 
 ## Casos de prueba de la fábrica
 
-Tres casos de tamaño creciente y en tres dominios distintos. El chico aísla las fallas de la fábrica (si falla un producto trivial, falla la coordinación); los otros dos suben la dificultad del producto. Correr los mismos mandates sobre los tres es la prueba de "Generic: another team could point your mandates at a different problem". Cada criterio nombra el comando o artefacto que lo prueba.
-
-### Chico — API de notas (F1)
-
-Problema propio de una etapa: CRUD de notas con create idempotente por `Idempotency-Key`, sin UI. Spec en `cases/small/SPEC.md` (formato de brief del ítem 14), checks escritos a mano desde la spec en `cases/small/checks.py` (stdlib). No se entregan: son nuestra suite de aceptación.
-
-| Capa | Criterio | Cómo se prueba |
-|---|---|---|
-| Producto | 100% de los checks | `python3 cases/small/checks.py http://localhost:8080` → exit 0 |
-| Producto | Contenedor sano en ≤ 30 s, también sin red | `docker build -f stage-1/Dockerfile stage-1/`; `docker run --network none -e PORT=8080` + `/health` |
-| Fábrica | Todos los seats hablan al menos una vez y hay `@` recíprocos | `harness check` sobre `room.json` + conteo de `senderId` |
-| Fábrica | Un solo dispatch, cero mensajes humanos después | `room.json`: mensajes con `senderType` humano = 1 |
-| Fábrica | Ciclo completo coordinador → builder → reviewer → veredicto | validador v1 |
-| Fábrica | Al menos un REJECT con reparación (si no ocurre, se inyecta un bug) | validador v1: rechazo con `refs=` a su SHA |
-| Fábrica | Un reinicio de seat sobrevivido sin identidades nuevas | `senderId` distintos antes y después del reinicio |
-| Fábrica | 100% de handoffs y veredictos con la última línea parseable | validador v1 |
-| Fábrica | Tiempo y tokens medidos: costo base de la fábrica | fuente de la Decisión pendiente 1 |
-
-### Mediano — track `toy` (F1)
-
-Contador compartido del kickoff: de práctica, sin puntaje, trae la suite completa. Las etapas salen de su spec; los tests no se leen.
-
-| Capa | Criterio | Cómo se prueba |
-|---|---|---|
-| Producto | Suite completa en cada etapa, modo aislado | `harness run --all --mode isolated` |
-| Producto | Paquete válido | `harness check` limpio |
-| Fábrica | **Los mismos mandates que el chico**; solo cambia el brief; todo cambio de mandate registrado como defecto genérico (regla 19) | `git diff` de `mandates/` entre corridas + log de enmiendas |
-| Fábrica | Mandates sin vocabulario de ningún dominio | grep de los términos de los tres casos sobre `mandates/`: vacío |
-| Fábrica | Handoffs con la spec completa pegada (en partes si hace falta) | lectura de `room.json` |
-| Fábrica | Todas las etapas en un solo dispatch; costo por etapa publicado en el room | `room.json` |
-| Fábrica | Breaker o auditor probado (Decisión 4) | el seat habla y su veredicto aparece en el validador |
-
-### Grande — track `tablekeeper` (F2 y F3)
-
-La entrega. Se itera en F2 y se corre una sola vez, limpia, en F3.
-
-| Capa | Criterio | Cómo se prueba |
-|---|---|---|
-| Producto | Cada suite 1..N ≥ 0,5, objetivo etapa 4, sin overshoot | `harness run --all --mode isolated` |
-| Producto | Checks del paquete final (health ≤ 30 s aislado, `--network none`, reset 204 < 10 s, sin binds locales, sin symlinks) | **Contrato del runner** › Checks del paquete final |
-| Fábrica | Todo el **Checklist de entrega** | checklist |
-| Fábrica | Override-rate 0 | `room.json`: un solo mensaje humano |
-| Fábrica | Al menos un hallazgo con su rastro ACCEPT/DISPUTE | validador v2 |
-| Fábrica | Validador v2 verde y `room.json` aceptado | validador v2 + `harness check` |
+Movidos a `docs/USE-CASES.md` (en inglés, trazados a los R y AE de `docs/BRIEF.md`): chico con la API de notas (`cases/small/`), mediano con el track toy y grande con tablekeeper, cada uno con criterios de producto y de sistema y cómo se prueban.
 
 ## Setup propio de Lights-out
 
