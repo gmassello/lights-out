@@ -19,7 +19,7 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 
 - Mandates con la plantilla de la regla 1 y el bloque anti-loop (regla 2); brief con la plantilla del ítem 14.
 - Protocolo: **Vocabulario único y última línea** (ítems 26–28).
-- Alcance: ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28; reglas 1–5, 7, 11, 13.
+- Alcance: ítems 1, 2, 5, 9, 15, 17, 19, 26, 27, 28, 45, 46; reglas 1–5, 7, 11, 13.
 - Validador v1 (ítem 22 básico): SHA existentes, veredicto por etapa, rechazos con reparación.
 - Preflight del seat (Operación). Primero el **caso chico** y, cuando cumple sus criterios, el **caso mediano** (toy) en modo aislado (ver **Casos de prueba de la fábrica**).
 
@@ -28,7 +28,7 @@ Seis fases en orden. Se pasa a la siguiente cuando se cumple el criterio de sali
 ### F2 — Iteración sobre tablekeeper
 
 - Corridas del **caso grande** (el track real); los mandates cambian solo por defectos genéricos de la fábrica (regla 19) y cada cambio queda registrado.
-- Alcance que se suma si el toy lo probó: ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36; breaker o auditor según la Decisión 4.
+- Alcance que se suma si el toy lo probó: ítems 3, 4, 6, 7, 8, 13, 16, 18, 23, 31, 32, 33, 34, 36, 41, 42, 43, 44, 47; breaker o auditor según la Decisión 4.
 - Validador v2: menciones y ciclos (ítems 29, 30), errores vs warnings (ítem 38).
 
 **Sale** con una corrida que cumple los criterios del caso grande (salvo los de la corrida final: repo nuevo y un solo intento) y los mandates y el brief congelados con sus hashes SHA-256 (Operación: freeze).
@@ -235,6 +235,18 @@ Ideas de protocolo tomadas de la spec de A2A (https://a2a-protocol.org), sus sam
 
 Descartado de estas fuentes: usar A2A, SLIM, Dir o SHADI como transporte; `auth-required`, interrupts con resume y approval gates humanos (steering); OAuth, DID, firmas y pagos (sin superficie en BAND); recruiter o descubrimiento fuera de la banda (ítem 9); varios builders compitiendo con voto (multiplica costo); orquestadores por turno (no pasan el delete test); métricas con LLM como juez (no reproducibles).
 
+### De zero-pi (relevado el 27 sep 2026)
+
+Paquete de flujo spec-driven para el agente pi (https://github.com/gonzalonicolasr/zero-pi): clarify → explore → plan → analyze → build → veredicto, cada fase como sub-agente de un orquestador. La arquitectura no se copia (orquestador por turno: falla el delete test); se toman reglas de proceso.
+
+41. **Veredicto `REPLAN` separado de `REJECT`.** Si el defecto es la interpretación de la spec o el plan, no el código, el reviewer emite `REPLAN` dirigido al coordinador, no al builder; el coordinador corrige el plan (enmienda del ítem 16) y re-delega. Evita rondas de reparación sobre un plan equivocado. Fuente: veredicto `replantear` de `prompts/phases/veredicto.md`.
+42. **Contador de rondas durable.** Las rondas de review de cada `task` se cuentan desde las líneas `STATE` del room, no desde la memoria del seat: un reinicio (regla 19) no devuelve el cupo de la regla 11. Fuente: `/zero-rounds` (`rounds.json`).
+43. **Tope de re-planes.** El segundo `REPLAN` de una misma etapa la cierra como "no verificada" y se registra como resultado (ítem 9), en vez de seguir girando. Fuente: gate `analyze` ("the second replan stops blocked/not verified").
+44. **Auditoría de calidad de tests.** El reviewer revisa los tests del builder además de correrlos: rechaza tautologías, loops que no afirman nada, tests solo de humo y asserts sobre detalles internos. Complementa los niveles de evidencia (ítem 31). Fuente: `prompts/support/strict-tdd-verify.md`.
+45. **Disciplina de tokens del revisor.** En el mandate de quien revisa: no releer un archivo que no cambió desde la última lectura y buscar solo dentro del repo (nunca desde `/` o `~`); el revisor suele ser el seat más caro. No baja la vara del veredicto. Fuente: `veredicto.md`.
+46. **Guard de proveedor en el preflight.** Verificar que cada seat de Claude Code corre con la suscripción Max y no con una API key paga (variable `ANTHROPIC_API_KEY` presente en el entorno del seat): el costo real cambia y el reporte también. Fuente: extensión `provider-guard`.
+47. **Specs por etapa como deltas con IDs estables.** El coordinador describe cada etapa como `ADDED / MODIFIED / REMOVED / RENAMED` sobre los requisitos de la anterior; los `[C-nn]` conservan su ID entre etapas, y un requisito renombrado mantiene el ID. Hace trazable la regresión (ítem 13) y la extensión sin inflado. Fuente: `/zero-sync` y "Spec deltas" del README.
+
 ### Vocabulario único y última línea
 
 Un enum por nivel; ningún otro término de veredicto en mandates ni mensajes.
@@ -243,7 +255,7 @@ Un enum por nivel; ningún otro término de veredicto en mandates ni mensajes.
 |---|---|---|
 | Hallazgo `[C-nn]` | `CONFORMS` / `DEVIATES` | reviewer, auditor |
 | Respuesta a un hallazgo | `ACCEPT` / `DISPUTE` / `CLARIFY` (ítem 28) | builder |
-| Candidato (SHA) | `ACCEPT` / `REJECT` / `INSUFFICIENT_EVIDENCE` / `BLOCKED` (reglas 12–13) | reviewer, breaker, auditor |
+| Candidato (SHA) | `ACCEPT` / `REJECT` / `REPLAN` (ítem 41) / `INSUFFICIENT_EVIDENCE` / `BLOCKED` (reglas 12–13) | reviewer, breaker, auditor |
 | Handoff | `working` / `input-required` / `completed` / `failed` / `refused` | todo seat |
 
 Línea de protocolo, única y al final de cada handoff o veredicto (ítem 26); los campos que no aplican se omiten:
@@ -448,7 +460,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 
 ## Decisiones pendientes (resolver en F1, casos chico y mediano)
 
-1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `jam usage` no está verificado; `room.json` no trae usage. Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa.
+1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `jam usage` no está verificado; `room.json` no trae usage. Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa. Candidata sin verificar: los transcripts de cada seat de Claude Code (`~/.claude/projects/<proyecto>/<sesión>.jsonl`), que registran `usage` por mensaje; sumarlos por seat y por ventana de etapa con un script, confirmarlo en el caso chico contra lo que muestra Claude Code.
 2. **Cómo se crean los seats.** Onboarding manual con `/jam` desde Desktop, script headless (ítem 21, comandos sin verificar) o seats SDK para OpenCode (Plan B/C). Elegir uno para la corrida final y documentarlo en `FACTORY.md`.
 3. **Qué modelo va en el seat que verifica.** El setup sugiere modelos livianos en los que revisan, pero en la corrida analizada la review fue el cuello de botella y la verificación de caja negra encontró 4 de 5 defectos. Diversidad de modelo sí (ítem 6); modelo más débil en quien verifica, solo si el toy muestra que alcanza.
 4. **Qué seats suma la fábrica además de los tres base.** El toy arranca con coordinador (también planifica: parte la spec en tareas del board y lleva el log de enmiendas), builder y reviewer. Candidatos, en orden de prioridad:
