@@ -52,7 +52,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R1
 - **Files:** `cases/BRIEF-TEMPLATE.md`, `cases/small/SPEC.md`
 - **Depends on:** —
-- **Status:** todo
+- **Status:** done (28 sep) — `cases/BRIEF-TEMPLATE.md` with the six sections and the result repository line; the small-case spec has the same headings in the same order; the template has no domain word and no track vocabulary. The empty-section test is behaviour: the template's Escalation and the coordinator's Escalate agree, and the run itself proves it in U6.
 - **Tests:**
   - happy: the small-case spec follows every section of the template → no section missing.
   - edge: the template read without any case → contains no domain term.
