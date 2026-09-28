@@ -41,7 +41,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R1, R2, R3, R9 · F2
 - **Files:** `mandates/coordinator.md`, `mandates/builder.md`, `mandates/reviewer.md` (workspace copies, frozen in U9)
 - **Depends on:** U1
-- **Status:** todo
+- **Status:** done (28 sep) — `mandates/` with the F1 scope; the harness mandate gate returns no problem for toy, tablekeeper and pocketful; a domain-word scan finds nothing; a copy with `## Model:` fails gate 1 as expected (the field must start the line). Models: builder `claude-opus-5-5`, coordinator and reviewer `claude-sonnet-5-5`. The coordinator is the only seat that pushes, after ACCEPT.
 - **Tests:**
   - happy: the harness check on a repo with the three mandates → mandate gate passes. Covers AE4.
   - edge: the mandates are scanned for the vocabulary of notes, counters and reservations → no match.
