@@ -1,7 +1,7 @@
 # Pendiente — cierre Dark Factory (WeAreDevelopers × BAND)
 
 Cierre: **lun 5 oct 2026, 23:59 PDT** (mar 6 oct 2026, 03:59 ART). Competencia:
-<https://lablab.ai/ai-hackathons/wearedevelopers-hackathon> · Submission: <pendiente: inscripción + equipo> · PR: <no aplica>.
+<https://lablab.ai/ai-hackathons/wearedevelopers-hackathon> · Equipo: <https://lablab.ai/ai-hackathons/wearedevelopers-hackathon/lights-out> (invite-only, *Submit Project* habilitado desde el 28 sep) · Submission: <pendiente> · PR: <no aplica>.
 
 Etapas (de la página del evento y la participant guide): submissions hasta lun 5 oct 23:59 PDT, judging <not published>,
 ganadores <not published>.
@@ -49,7 +49,7 @@ Las trampas del repo, para el que lo toque dentro de tres dias (que sos vos, sin
 
 No son tareas: son riesgos. Cada uno con su fallback.
 
-- **Inscripción en lablab + Discord + equipo propio como admin** — sin los tres, *Submit Project* queda gris. Fallback: ninguno; hacerlo antes del lun 28 sep, no el último día.
+- ~~**Inscripción en lablab + Discord + equipo propio como admin**~~ — resuelto el 28 sep: inscripto, formulario de screening enviado, equipo Lights-out creado como admin y *Submit Project* habilitado. Discord solo hace falta para canales de equipo (piden 2 miembros), no para enviar.
 - **Cuenta BAND y readiness check de Desktop** — depende del instalador y del plugin de BAND. Fallback: preguntar en el BAND Discord; un seat que no arranca en OpenCode pasa a Claude Code.
 - **Cupo del modelo durante la corrida autónoma** — si un seat se queda sin cupo a mitad de etapa, no se puede intervenir. Fallback: lanzar la corrida al inicio de una ventana limpia, con el costo del toy ya medido.
 - **Créditos Featherless** — primeros 1.000 inscriptos, promo por mail. Fallback: suscripción o API key propia.
