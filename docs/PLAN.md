@@ -29,11 +29,12 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** — (enables every unit)
 - **Files:** `CLAUDE.md`, `docs/FACTORY-DESIGN.md` (verified CLI commands)
 - **Depends on:** —
-- **Status:** todo
+- **Status:** todo — done so far (28 sep): lablab team created with *Submit Project* enabled; kickoff cloned and harness venv installed; `## Commands` in `CLAUDE.md`; BAND Desktop 0.4.12 signed in, CLI installed, `band-peer` plugin installed with local scope and `band preflight` green; `band` subcommands verified. Left: Docker daemon running and the desktop app's readiness recheck.
 - **Tests:**
   - happy: the harness check runs against the kickoff repo's toy example → exits cleanly.
   - edge: the lablab project page → *Submit Project* is enabled for our team.
   - error: a `band` subcommand listed in the design doc does not exist → it is marked unverified and nothing depends on it.
+  - edge: a seat started in a directory where the plugin is not enabled (the plugin is installed with local scope) → the seat has no room tools, so the plugin is enabled in every working directory a seat uses before the dispatch.
 
 ### U2. Mandates v1 and protocol
 - **Goal:** three generic mandates (coordinator, builder, reviewer) that start with `Harness:` and `Model:`, follow the role template, carry the anti-loop rules, the acceptance-first rule, the protocol line and the single verdict vocabulary, and name no domain.
@@ -70,13 +71,13 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
   - error: a recording with two human messages → exits non-zero. Covers AE5.
 
 ### U5. Cost meter
-- **Goal:** a command that sums time and tokens per seat and per stage window from the seats' session transcripts, or reports time only and labels the result partial when tokens are unavailable. Verified on this machine: each transcript line carries `timestamp`, and assistant lines carry `message.usage` (input, output, cache read, cache creation), but one message spans several lines with the same `message.id`, so usage is counted once per id. Still to confirm in U6: that seats launched from the desktop app write transcripts in the same place.
+- **Goal:** a command that sums time and tokens per seat and per stage window, taking `band usage agents` / `band usage rooms` (ccusage-backed estimates per local agent and per room) as the first source and the seats' session transcripts or reports time only and labels the result partial when tokens are unavailable. Verified on this machine: each transcript line carries `timestamp`, and assistant lines carry `message.usage` (input, output, cache read, cache creation), but one message spans several lines with the same `message.id`, so usage is counted once per id. Still to confirm in U6: that seats launched from the desktop app write transcripts in the same place.
 - **Covers:** R6
 - **Files:** `tools/measure_cost.py`
 - **Depends on:** U1
 - **Status:** todo
 - **Tests:**
-  - happy: the small-case transcripts and the stage window → totals that match what the tool shows for the same sessions. Covers AE8.
+  - happy: the small-case transcripts and the stage window → totals that match `band usage` for the same seats. Covers AE8.
   - edge: a message split across several transcript lines with one id → counted once, not per line.
   - edge: a seat with no messages inside the window → zero, not missing.
   - error: transcripts without usage fields → output labelled partial, exit 0.
@@ -181,7 +182,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
   - error: the video lacks the room recording → not submitted until it is added.
 
 ### U15. Seat launch script
-- **Goal:** an idempotent script that creates the seats, the room and the participants from the mandates and fails if a declared model does not match the real one.
+- **Goal:** an idempotent script that creates the seats (`band agent create`), the room and the participants (`band chat new|add`) from the mandates and fails if a declared model does not match the real one. The subcommands exist in `band` 0.4.12; the flags are read from their `--help` when the script is written.
 - **Covers:** R8
 - **Files:** `tools/launch.sh`
 - **Depends on:** U1
@@ -214,7 +215,8 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - Shared Max usage runs out mid-run — likelihood: media — mitigation: measure U6 and U7 cost with U5 and start U11 at the beginning of a clean window — fallback: plan B seat on paid Gemini for a verifier.
 - A seat stalls on a permission prompt or a dead peer — likelihood: media — mitigation: preflight with no manual approvals and a bounded wait rule in the mandates — fallback: the stall is recorded as the stage result, no human input.
 - Token usage cannot be read per seat — likelihood: baja (transcripts carry usage; only the desktop-launched location is unconfirmed) — mitigation: U5 reads the transcripts, deduplicated by message id — fallback: time plus partial tokens, labelled partial.
-- The `band` CLI subcommands in the design doc do not exist — likelihood: alta — mitigation: U1 verifies them before anything depends on them — fallback: manual seat creation from the desktop app (U15 is cut).
+- The `band` CLI subcommands do not behave as the design doc assumes — likelihood: media (they exist in 0.4.12, behaviour untested) — mitigation: U6 exercises `band work`, `band usage` and `band attach` on the small case — fallback: manual seat creation from the desktop app (U15 is cut).
+- The plugin is enabled only in this workspace (local scope) — likelihood: alta — mitigation: enable it with local scope in each result repo a seat works in, as part of the preflight — fallback: seats run from the workspace directory with the result repo path passed as absolute.
 - A credential ends up in the recording — likelihood: media — mitigation: no seat prints auth headers — fallback: redaction recorded in U12.
 
 ## Out of scope

@@ -125,7 +125,7 @@ Relevado de las 190 páginas de https://docs.band.ai (índice `llms.txt`) el 26 
 
 1. Una conexión WS por Agent ID, gana la última: dos procesos con la misma identidad se desconectan en silencio.
 2. Entrega *at-least-once*: un mensaje puede repetirse tras un crash, así que los efectos (commits) tienen que ser idempotentes.
-3. Tasks/board son Beta y solo REST (sin tool de SDK/MCP): el seat las maneja con `curl` y necesita su agent key fuera del repo. Probar en el toy antes de meterlas en un mandate.
+3. Tasks/board son Beta. En la API figuran solo por REST, pero la CLI `band` 0.4.12 los maneja sin key en el repo: `band work assign` (tarea compartida del room), `take`, `room-status`, `board`, `history` y `edit` (guarda `from -> to`). Probar en el caso chico antes de meterlas en un mandate.
 4. No figura si la descarga del room (Chat Export, tier **Pro** según changelog 9-jun) incluye tasks, board, usage o `attention`. Verificarlo en el `room.json` del toy; si no los incluye, el SHA también va en el mensaje.
 5. Requieren humano: login de Desktop, instalar/recargar el plugin, API keys (se ven una sola vez), readiness "Recheck", interrupt/stop/play. Todo antes del dispatch.
 6. OpenCode no chequea salud al arrancar: un puerto muerto aparece recién en el primer mensaje.
@@ -164,7 +164,7 @@ Relevado el 26 sep 2026. Se ordenan por esfuerzo; casi todo es texto en mandates
 
 ### Esfuerzo medio
 
-21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. **Ningún comando `jam plan`/`work`/`usage`/`agent create`/`chat` figura en las docs oficiales, la hacker guide ni el SDK**: verificarlos con `band --help` en la versión instalada antes de escribir el script.
+21. **Script de lanzamiento idempotente (bash).** Crea los seats con `jam agent create --transport claude-code-cli --runtime-auth subscription --runtime-model <id> --instructions-file mandates/<seat>.md`, arma el room con `jam chat new` / `jam chat add`, guarda estado en un archivo ignorado por git, falla si el `Model:` del mandate no coincide con el modelo real del seat y tiene un flag para forzar room nuevo en la corrida entregada. Verificado el 28 sep con `band --help` (v0.4.12, `jam` es alias): existen `band agent create` / `agent instructions`, `band chat new|list|add|remove|participants`, `band plan set|diagram|show|focus|status`, `band work …`, `band usage …`, `band send`, `band attach` (alias `reattach`), `band preflight`, `band doctor`, `band permissions`. Los flags exactos de `agent create` se leen con `band agent create --help` al escribir el script.
 22. **Validador post-run.** Cruza `room.json` ↔ tasks ↔ commits: cada etapa cerrada tiene veredicto con SHA, cada SHA existe en el historial y cada rechazo tiene su reparación. Falla si queda algo huérfano.
 23. **Paquete de verificación final.** Clon público fresco → `harness check` → `harness run --all --mode isolated` → `evidence/verification-receipt.json` con comandos, exit codes y tiempos. `evidence/PACKAGING.json` con sha256, bytes y `exportedAt` de `room.json`, y `edited` en `false` solo si no hubo que redactar nada; si se redactó una credencial, se registra qué y dónde (redactar ya es editar). Audit de symlinks, gitlinks, `.git` anidado, credenciales en todo el historial y vocabulario del track en mandates.
 24. **Seat Spec Auditor** (opcional, suma un seat y costo). Solo lectura: matriz spec → código → check, busca faltantes y también extras no pedidos, firma por etapa y no por ítem para no llenar el room. El cierre de etapa requiere doble firma (verifier + auditor).
@@ -224,13 +224,17 @@ NEXT @<handle> | DONE
 
 Es la referencia de estado de la regla 5 y reúne lo que piden los ítems 4, 33, 36 y 39. El ACCEPT del builder a un hallazgo y el ACCEPT del reviewer a un candidato se distinguen por el nivel: el primero lleva `[C-nn]`, el segundo `sha=`.
 
-### Gotchas operativos de Jam (no están en las docs; comandos sin verificar con `band --help`)
+### Instalación del plugin (28 sep)
+
+`band plugin install` falla si `~/.claude/commands` es un symlink ("not a regular directory"). Se instaló desde lights-out con `claude plugin marketplace add /Applications/Band.app/Contents/Resources/claude-plugin-marketplace --scope local` y `claude plugin install band-peer@jam --scope local`: queda habilitado solo en este proyecto (`.claude/settings.local.json`) y `band preflight` pasa. Los seats tienen que arrancar en un directorio donde el plugin esté habilitado.
+
+### Gotchas operativos de Jam (no están en las docs; los subcomandos existen en `band` 0.4.12, el comportamiento está sin probar)
 
 - Una mención a un seat con el runtime parado es un no-op silencioso: `jam list` antes del dispatch es parte del preflight.
 - `room send` devuelve 404 hasta que el humano es participante del room.
 - `jam restart` no revive un peer parado, y Jam no recoge procesos `claude` huérfanos: revisarlos entre corridas.
 - El timeout de una aprobación humana hace auto-deny: en la corrida final no puede quedar ningún permiso en modo manual.
-- `jam plan set --snapshot` / `jam plan diagram` publican el plan en el room (re-ejecutar tras cada edición); `jam usage` da el consumo.
+- `jam plan set --snapshot` / `jam plan diagram` publican el plan en el room (re-ejecutar tras cada edición); `band usage agents|rooms|sessions|blocks` da tokens y USD estimados por agente local, por room y por sesión (basado en ccusage, no es facturación).
 - Pegar la spec completa en cada handoff es obligatorio (guía oficial), pero en una corrida real (decenas de KB por mensaje, turnos de horas) disparó compactaciones de contexto y mensajes cruzados: se mitiga partiendo en mensajes numerados y cerrando el turno después de cada handoff, no dejando de pegarla.
 - Los eventos `room_tasks` por WebSocket están detrás del flag `ff_room_tasks` y el SDK Python no los auto-une: nadie recibe push de cambios del board.
 - Codex arranca con `approval_mode="manual"`, y con `approval_timeout_decision="decline"` un timeout termina en rechazo.
@@ -417,7 +421,7 @@ Relevado de ganadores públicos de lablab el 26 sep 2026, sobre todo del **Band 
 
 ## Decisiones pendientes (resolver en F1, casos chico y mediano)
 
-1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `jam usage` no está verificado; `room.json` no trae usage. Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa. Candidata verificada a medias (28 sep): los transcripts de Claude Code (`~/.claude/projects/<proyecto>/<sesión>.jsonl`) traen `timestamp` por línea y `message.usage` (input, output, cache read, cache creation) en las del asistente; un mensaje ocupa varias líneas con el mismo `message.id` (573 líneas para 297 ids en una sesión real), así que se suma una vez por id. Falta confirmar en el caso chico que los seats lanzados desde Desktop escriben ahí (PLAN U5).
+1. **De dónde sale el número de tokens.** `Emit.USAGE` es del SDK (`ClaudeSDKAdapter`) y nuestros seats son Claude Code con el plugin de Desktop; `room.json` no trae usage. Primera candidata (28 sep): `band usage agents` y `band usage rooms` (ccusage, tokens y USD estimados por agente y por room; falta ver si corta por ventana de etapa). Probar en el toy qué fuente da tokens por seat y por etapa, y publicarlo como `text` al cierre de cada etapa. Candidata verificada a medias (28 sep): los transcripts de Claude Code (`~/.claude/projects/<proyecto>/<sesión>.jsonl`) traen `timestamp` por línea y `message.usage` (input, output, cache read, cache creation) en las del asistente; un mensaje ocupa varias líneas con el mismo `message.id` (573 líneas para 297 ids en una sesión real), así que se suma una vez por id. Falta confirmar en el caso chico que los seats lanzados desde Desktop escriben ahí y que las dos fuentes coinciden (PLAN U5).
 2. **Cómo se crean los seats.** Onboarding manual con `/jam` desde Desktop, script headless (ítem 21, comandos sin verificar) o seats SDK para OpenCode (Plan B/C). Elegir uno para la corrida final y documentarlo en `FACTORY.md`.
 3. **Qué modelo va en el seat que verifica.** El setup sugiere modelos livianos en los que revisan, pero en la corrida analizada la review fue el cuello de botella y la verificación de caja negra encontró 4 de 5 defectos. Diversidad de modelo sí (ítem 6); modelo más débil en quien verifica, solo si el toy muestra que alcanza.
 4. **Qué seats suma la fábrica además de los tres base.** El toy arranca con coordinador (también planifica: parte la spec en tareas del board y lleva el log de enmiendas), builder y reviewer. Candidatos, en orden de prioridad:
