@@ -63,7 +63,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R3, R5, R7, R9
 - **Files:** `tools/validate_room.py`
 - **Depends on:** U2
-- **Status:** todo
+- **Status:** done (28 sep) — `tools/validate_room.py`, stdlib only; `--self-check` builds a git repo and synthetic rooms and covers the happy path with a repaired REJECT, a self-accepted stage (reported open), a missing sha (named by message) and two human messages; a mutation that ignores the author makes it fail. Room fields follow `harness/check.py`; the human `senderType` value and the happy test on the small-case recording are confirmed in U6 (the tool prints the sender types it sees).
 - **Tests:**
   - happy: the small-case recording → exits 0 and prints stages, verdicts and repairs first. Covers AE2.
   - edge: a stage whose only ACCEPT comes from the candidate's author → reported as open. Covers AE3.
