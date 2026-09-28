@@ -29,7 +29,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** — (enables every unit)
 - **Files:** `CLAUDE.md`, `docs/FACTORY-DESIGN.md` (verified CLI commands)
 - **Depends on:** —
-- **Status:** todo — done so far (28 sep): lablab team created with *Submit Project* enabled; kickoff cloned and harness venv installed; `## Commands` in `CLAUDE.md`; BAND Desktop 0.4.12 signed in, CLI installed, `band-peer` plugin installed with local scope and `band preflight` green; `band` subcommands verified. Left: Docker daemon running and the desktop app's readiness recheck.
+- **Status:** done (28 sep) — lablab team with *Submit Project* enabled; kickoff cloned and harness venv installed; `## Commands` in `CLAUDE.md`; BAND Desktop 0.4.12 signed in, CLI installed, `band-peer` plugin with local scope, Claude Code added as agent, `band preflight` and `band setup check` green; `band` subcommands verified; colima running with 4 CPU / 8 GiB and a harness smoke run on the toy scaffold built, served and scored (2/8, as expected for the empty scaffold).
 - **Tests:**
   - happy: the harness check runs against the kickoff repo's toy example → exits cleanly.
   - edge: the lablab project page → *Submit Project* is enabled for our team.
