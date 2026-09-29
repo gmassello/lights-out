@@ -20,6 +20,7 @@ nothing may be injected into that run. The factory has to make dissent likely by
 - A4. Reviewer seat — publishes acceptance checks from the spec before the build and issues the verdict against them.
 - A5. Breaker or auditor seat — optional; probes the running service from outside with veto power.
 - A6. Judge — reads the repo, `FACTORY.md`, the mandates, the room recording and the video.
+- A7. Environment seat — owns the shared container runtime and host ports: readies them before the first stage, restores them when a seat cannot reach them and checks that nothing from the run is left running.
 
 ## Requirements
 - R1. The same mandates run unchanged on problems from different domains; only the brief changes. [criterion: Factory]
@@ -59,6 +60,8 @@ nothing may be injected into that run. The factory has to make dissent likely by
 - The central bet is a blocking verdict — chosen over dependent handoffs, BAND-enforced mention limits or a runtime roster as the headline signal, because judges count "a rejection when it changed the work". settled: user-approved
 - Acceptance first: verifiers commit their checks from the spec before the build — chosen over build-then-inspect and over two builders reviewing each other, because it makes a rejection likely without injecting faults and without extra seats. settled: user-approved
 - The coordinator also plans; no separate planner seat — chosen over a planner seat because review, not planning, is the bottleneck and a fixed role pipeline scores low. settled: user-approved
+- Environment seat: a fourth seat owns machine state, so builder and reviewer never start or stop the shared container runtime — chosen after a practice run where the builder stopped the runtime the reviewer needed. settled: user-directed
+- Silent seat watchdog: a local factory tool restarts a mentioned seat that is idle and has not answered for 10 minutes; it never writes to the room, and seats post with an immediate send instead of a reply staged until the turn ends — chosen after a lost staged reply stalled run 4 of the small case. settled: user-directed
 - All seats on the Claude Max subscription; a paid Gemini seat is plan B and a Featherless seat is plan C — chosen over the free Gemini tier, whose limits can stall a seat mid-run. settled: user-directed
 - Three test cases of growing size in different domains: an own trivial case, the practice track, then the real track. settled: user-directed
 

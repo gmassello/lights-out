@@ -1,6 +1,6 @@
 ---
 name: band-factory-run
-description: Arma, vigila y cierra una corrida de la fábrica Lights-out en BAND — repo de resultado, creación de los seats coordinator/builder/reviewer, despacho, reinicio de un seat, room.json, validador, checks y costo. Usar al armar o repetir una corrida (caso chico, toy, tablekeeper, corrida final), al crear o recrear los seats, o al cerrar una corrida con room.json. Solo vale en este repo.
+description: Arma, vigila y cierra una corrida de la fábrica Lights-out en BAND — repo de resultado, creación de los seats coordinator/builder/reviewer/environment, despacho, reinicio de un seat, room.json, validador, checks y costo. Usar al armar o repetir una corrida (caso chico, toy, tablekeeper, corrida final), al crear o recrear los seats, o al cerrar una corrida con room.json. Solo vale en este repo.
 ---
 
 # Corrida de la fábrica en BAND
@@ -43,7 +43,8 @@ band agent create --dry-run --json --session lo-<seat> --name <seat> --cwd $R \
 
 `ok: true` y "Other MCP servers: 0 other server(s)". Después, lo mismo sin `--dry-run` y con
 `--description "Lights-out <seat> seat" --instructions-file ~/Documents/lights-out/mandates/<seat>.md`.
-`band list` tiene que mostrar los tres `Connected running=true`.
+`band list` tiene que mostrar los cuatro `Connected running=true`: coordinator, builder, reviewer
+y environment.
 
 Para otra corrida en otro repo, los mismos seats se mudan con
 `band runtime template set --session lo-<seat> --spawn-cwd $R`: rige para las sesiones nuevas, o
@@ -54,10 +55,17 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
 ## 3. Room y despacho (los hace el usuario)
 
 1. Brief: `cases/<caso>/SPEC.md` con `Result repository:` completado. Se escribe en el scratchpad,
-   se copia con `pbcopy` y se abre con `open -a TextEdit` para que lo vea.
-2. El usuario crea el room en Desktop con **solo** los tres seats (el agente "Claude Code" de esta
-   ventana no: sería un cuarto seat sin mandate).
+   se copia con `pbcopy` y se abre con `open -a TextEdit` para que lo vea. Antes, cerrar en
+   TextEdit los briefs de corridas anteriores: pegar uno viejo manda los seats al repo viejo.
+2. El usuario crea el room en Desktop con **solo** los cuatro seats (el agente "Claude Code" de esta
+   ventana no: sería un seat más sin mandate).
 3. El usuario pega el brief empezando con `@coordinator` y lo manda. Anotar la hora UTC.
+4. Apenas despachado, leer el primer mensaje (`band room messages <room-id> --json --type text`)
+   y confirmar que su línea `Result repository:` es `$R`. Si no coincide, parar antes de que un
+   seat commitee y repetir con un room nuevo.
+5. Arrancar el watchdog en segundo plano (reinicia al seat mencionado que lleva 10 min inactivo
+   sin contestar; no escribe en el room y sale solo con el reporte al humano):
+   `python3 tools/watchdog.py <room-id> --seats coordinator,builder,reviewer,environment | tee ~/Documents/band-work/<caso>-run-N.watchdog.log`
 
 ## 4. Vigilar
 
@@ -81,7 +89,8 @@ band status --session lo-builder          # pid nuevo, mismo runtime_session, pr
 ## 6. Cierre
 
 1. El usuario descarga el room: ⋮ → Open in Band → ⋮ → Download → **Download full session**.
-   Se copia tal cual a `$R/room.json`.
+   Se copia tal cual a `$R/room.json`. Confirmar que el watchdog salió y adjuntar su log a
+   `RUN-N.md` (cada reinicio que hizo es un hallazgo).
 2. Validador: `python3 tools/validate_room.py $R/room.json $R`.
 3. Producto:
    ```bash
@@ -92,10 +101,10 @@ band status --session lo-builder          # pid nuevo, mismo runtime_session, pr
    python3 cases/<caso>/checks.py http://localhost:<puerto>   # toy/tablekeeper: harness run
    ```
 4. Costo: mapear seat → sesiones buscando la primera línea del mandate en los transcripts
-   (`grep -l "You plan and coordinate\|You build what\|You decide whether" ~/.claude/projects/<repo-slug>/*.jsonl`);
+   (`grep -l "You plan and coordinate\|You build what\|You decide whether\|You keep the machine" ~/.claude/projects/<repo-slug>/*.jsonl`);
    un seat reiniciado tiene más de una. Después:
    ```bash
-   python3 tools/measure_cost.py <inicio> <fin> coordinator=<id> builder=<id>,<id> reviewer=<id>
+   python3 tools/measure_cost.py <inicio> <fin> coordinator=<id> builder=<id>,<id> reviewer=<id> environment=<id>
    band usage refresh && band usage sessions --json          # comparar totales por sesión
    ```
 5. `harness check $R --track <track>` desde el clon del kickoff.
@@ -105,12 +114,12 @@ band status --session lo-builder          # pid nuevo, mismo runtime_session, pr
 `cases/<caso>/RUN-N.md` con la estructura de `cases/small/RUN-1.md`: timeline, resultados,
 hallazgos del validador con su enmienda, formatos y gotchas. Actualizar el estado de la unidad en
 `docs/PLAN.md`. Una enmienda de mandates mantiene idéntico el bloque `## Rules for every seat` en
-los tres archivos (comparar con `shasum`) y vuelve a pasar el gate de mandates.
+los cuatro archivos (comparar con `shasum`) y vuelve a pasar el gate de mandates.
 
 ## Verificar
 
 ```bash
-band list                                                    # tres seats running=true
+band list                                                    # cuatro seats running=true
 python3 tools/validate_room.py --self-check
 python3 tools/measure_cost.py --self-check
 ```
@@ -131,7 +140,10 @@ python3 tools/measure_cost.py --self-check
 | `band room messages --json` y `room.json` difieren en las claves | la API en vivo usa snake_case; la descarga, camelCase (`senderType: Agent/User`) |
 | El validador marca la etapa `open` con un ACCEPT sobre un commit del reviewer | el `sha=` del veredicto es el candidato del builder (mandate del reviewer) |
 | `NEXT DONE` o un `STATE` sin segunda línea | inválidos: `NEXT @<seat>` o `DONE` |
-| Un cuarto agente en el room rompe el gate de mandates | el room tiene solo los seats con mandate |
+| Un agente sin mandate en el room rompe el gate de mandates | el room tiene solo los seats con mandate |
+| El despacho nombra el repo de otra corrida | leer el primer mensaje y comparar con `$R` (§3.4) |
+| Un seat espera una respuesta que se perdió (`staged: true` y el turno termina con error) y nada lo despierta | lo destraba el watchdog (§3.5) con `band restart` del seat que debía contestar; no agrega mensajes al room. Los mandates publican con `send`, no con la respuesta staged |
+| Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 
 ## Modificar / eliminar
 
