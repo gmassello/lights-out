@@ -76,7 +76,7 @@ def validate(room, repo):
         return (line["state"] == "ACCEPT" and line.get("stage") == stage
                 and authors.get(line["sha"]) not in (None, sender))
 
-    stages = sorted({l["stage"] for *_, l in parsed if l.get("stage")}, key=str)
+    stages = sorted({l["stage"] for *_, l in parsed if l.get("stage") not in (None, "0")}, key=str)
     verdicts = [e for e in parsed if e[3]["state"] in VERDICTS]
     details, closed = [], 0
     for stage in stages:
@@ -141,6 +141,8 @@ def self_check():
             "self-accept": (base[:4] + [msg("b", "@[[c]] " + line("ACCEPT", bad, "DONE"))], 1),
             "missing sha": (base[:-1] + [msg("r", "@[[c]] " + line("ACCEPT", "f" * 40, "DONE"))], 1),
             "two humans": (base + [msg("h", "go on", "user")], 1),
+            "setup stage 0": ([base[0], msg("c", "@[[e]] ready\nSTATE working stage=0 task=env\nNEXT @[[e]]"),
+                               msg("e", "@[[c]] ok\nSTATE completed stage=0 task=env\nNEXT @[[c]]")] + base[1:], 0),
         }
         for name, (messages, want) in cases.items():
             out, problems = validate({"messages": messages}, tmp)
@@ -153,7 +155,7 @@ def self_check():
         assert any("message #6 from r" in x for x in p), p
         out, _ = validate({"messages": base}, tmp)
         assert any(f"REJECT {bad}" in x and good in x for x in out), out
-    print("self-check ok: happy, self-accept, missing sha, two humans")
+    print("self-check ok: happy, self-accept, missing sha, two humans, setup stage 0")
 
 
 def main(argv):

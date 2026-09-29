@@ -114,6 +114,11 @@ started before you end the turn. Stop only what you started in this turn. Never 
 or stop a shared machine service such as the container runtime; if it is unreachable,
 ask `@environment`.
 
+**Never work around a guard.** If a hook, guard or permission check blocks a command,
+do not change the environment to get past it (no fake remotes, identities, flags or
+paths). Do the step another way that the guard allows, or report the block to
+`@coordinator` with the command and its output.
+
 **Never claim a check passed without running it.** Copy the summary line of the run
 into the message.
 

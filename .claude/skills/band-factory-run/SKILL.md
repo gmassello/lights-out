@@ -143,6 +143,7 @@ python3 tools/measure_cost.py --self-check
 | Un agente sin mandate en el room rompe el gate de mandates | el room tiene solo los seats con mandate |
 | El despacho nombra el repo de otra corrida | leer el primer mensaje y comparar con `$R` (§3.4) |
 | Un seat espera una respuesta que se perdió (`staged: true` y el turno termina con error) y nada lo despierta | lo destraba el watchdog (§3.5) con `band restart` del seat que debía contestar; no agrega mensajes al room. Los mandates publican con `send`, no con la respuesta staged |
+| Un seat esquiva un guard (p. ej. un remote falso para que `claude-git-guard` deje commitear) | regla "Never work around a guard" del bloque común; revisar los `tool_call` del room al cerrar |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 
 ## Modificar / eliminar
