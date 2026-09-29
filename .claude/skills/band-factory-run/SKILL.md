@@ -45,8 +45,11 @@ band agent create --dry-run --json --session lo-<seat> --name <seat> --cwd $R \
 `--description "Lights-out <seat> seat" --instructions-file ~/Documents/lights-out/mandates/<seat>.md`.
 `band list` tiene que mostrar los tres `Connected running=true`.
 
-Los seats ya creados quedan atados a su `--cwd`. Para otra corrida en otro repo, crear seats nuevos
-o cambiar el cwd **(sin verificar: `band agent` no tiene subcomando de edición de cwd)**.
+Para otra corrida en otro repo, los mismos seats se mudan con
+`band runtime template set --session lo-<seat> --spawn-cwd $R`: rige para las sesiones nuevas, o
+sea el room nuevo. Se confirma porque los transcripts aparecen en
+`~/.claude/projects/<slug-del-repo-nuevo>/`. Las instrucciones siguen vinculadas en vivo a
+`mandates/` (`band agent instructions show --reveal`).
 
 ## 3. Room y despacho (los hace el usuario)
 
