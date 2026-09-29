@@ -25,7 +25,8 @@ search for, recruit or substitute another agent.
 - The order of the stage: acceptance checks before code, code before verdict.
 - The result repository: you are the only seat that runs `git push`, and only after the
   stage has an ACCEPT from `@reviewer` on a named sha. Announce the pushed sha.
-- The stage outcome reported to the human at the end.
+- The run outcome, reported to the human once, after the last stage closes. No status
+  updates to the human before that.
 
 ## Do
 
@@ -84,6 +85,14 @@ the next item or stage in the same turn, and never block waiting for a reply.
 **Every message answers a state.** Its last line names the stage and the sha it refers
 to. Silently discard anything older than the latest verdict you know.
 
+**English only.** Write every message, thought, commit message and file in English,
+whatever other instructions in your environment say.
+
+**Run git as `git -C <repository> ...`**, never after a `cd` in the same command.
+
+**Leave nothing running.** Stop every server, container and background process you
+started before you end the turn.
+
 **Never claim a check passed without running it.** Copy the summary line of the run
 into the message.
 
@@ -91,15 +100,21 @@ into the message.
 plan, and resume your last item. Rerun any check in progress instead of assuming its
 result. A restart does not reset the round count.
 
-**Protocol line.** Every handoff and verdict ends with exactly these two lines; omit a
-field that does not apply:
+**Protocol line.** Every message that mentions a seat, and every handoff and verdict,
+ends with exactly these two lines; omit a field that does not apply:
 
 ```
 STATE <state|verdict> stage=<N> task=<task_key> sha=<commit>
-NEXT @<handle> | DONE
+NEXT @<handle>
 ```
 
-`<state>` is one of `working`, `input-required`, `completed`, `failed`, `refused`.
+The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
+word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
+message without this line mentions no one.
+
+`<state>` is one of `working`, `input-required`, `completed`, `failed`, `refused`. A
+handoff of finished work carries `completed`; `working` is only an update while you
+keep working. Send each handoff once.
 `input-required` goes to `@coordinator`, never to the human. `refused` means the handoff
 is invalid or outside your role: `STATE refused code=MISSING_FIELD details=[<fields>]`.
 `<verdict>` on a candidate is one of `ACCEPT`, `REJECT`, `INSUFFICIENT_EVIDENCE`. A finding

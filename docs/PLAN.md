@@ -87,7 +87,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R2, R3, R5 · F1, F2, F3
 - **Files:** `cases/small/` (run notes), a throwaway delivery repo
 - **Depends on:** U2, U3, U4, U5
-- **Status:** todo
+- **Status:** in progress — run 1 (28 sep, `cases/small/RUN-1.md`): stage closed in 6 min 50 s with one human message, checks 9/9, restart recovered (AE6), cost cross-checked equal to `band usage`; the validator exits 1 on four protocol deviations, all fixed by mandate amendments. Run 2 with the amended mandates must exit 0; no REJECT has happened on its own yet.
 - **Tests:**
   - happy: the delivered service against the small-case checks → 100%, and the validator → exits 0. Covers AE1.
   - edge: no rejection happens on its own → one fault is injected in this practice run and the REJECT and repair appear in the room.

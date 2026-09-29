@@ -11,7 +11,7 @@ FIELDS = (("input", "input_tokens", "inputTokens"),
           ("cache_read", "cache_read_input_tokens", "cacheReadTokens"),
           ("cache_creation", "cache_creation_input_tokens", "cacheCreationTokens"))
 PROJECTS = Path.home() / ".claude" / "projects"
-USAGE = "usage: measure_cost.py <start> <end> <seat|seat=sessionId|seat=path.jsonl>... | --self-check"
+USAGE = "usage: measure_cost.py <start> <end> <seat|seat=sessionId[,sessionId]|seat=path.jsonl>... | --self-check"
 
 
 class UsageError(Exception):
@@ -97,7 +97,7 @@ def measure(start, end, seats):
     for spec in seats:
         name, _, source = spec.partition("=")
         band = None if source else band_sessions(name)
-        ids = [source] if source else [s["sessionId"] for s in band]
+        ids = source.split(",") if source else [s["sessionId"] for s in band]
         paths = [p for sid in ids for p in transcripts(sid)]
         items, has_usage = read(paths)
         sums, active = totals(items, start, end)

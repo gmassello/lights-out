@@ -5,6 +5,8 @@ Canonical docs: `docs/BRIEF.md` (product contract, R/F/AE), `docs/PLAN.md` (unit
 The service is built by the factory: never write code in a `stage-N/` folder by hand, and never read
 the track tests (`*/test/` in the kickoff repo).
 
+How a factory run in BAND is set up, watched and closed: `.claude/skills/band-factory-run/SKILL.md`.
+
 ## Commands
 
 The event harness lives in the kickoff clone at `~/Documents/dark-factory-wearedevs` and must run
