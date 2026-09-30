@@ -24,9 +24,10 @@ def protocol(content):
     return {"state": state.group(1), **dict(FIELD.findall(state.group(2)))}
 
 
-def commit_exists(repo, sha):
-    return subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{sha}^{{commit}}"],
-                          capture_output=True).returncode == 0
+def resolve(repo, sha):
+    out = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}"],
+                         capture_output=True, text=True)
+    return out.stdout.strip() if out.returncode == 0 else None
 
 
 def validate(room, repo):
@@ -65,9 +66,12 @@ def validate(room, repo):
         if line["state"] in VERDICTS and not (line.get("stage") and line.get("sha")):
             problems.append(f"{where}: verdict {line['state']} without stage= and sha=")
             continue
-        if line.get("sha") and not commit_exists(repo, line["sha"]):
-            problems.append(f"{where}: sha {line['sha']} is not a commit in {repo}")
-            continue
+        if line.get("sha"):
+            full = resolve(repo, line["sha"])
+            if not full:
+                problems.append(f"{where}: sha {line['sha']} is not a commit in {repo}")
+                continue
+            line["sha"] = full
         parsed.append((i, m.get("senderId"), who, line))
 
     authors = {}

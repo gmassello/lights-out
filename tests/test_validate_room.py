@@ -94,6 +94,20 @@ class ValidateRoom(unittest.TestCase):
         self.assertTrue(any("ends with DONE" in x for x in problems), problems)
         self.assertTrue(any("with stage=" in x for x in problems), problems)
 
+    def test_short_and_full_sha_match(self):
+        messages = self.base[:5] + [msg("b", line("completed", self.good[:7], "NEXT @[[r]]")), self.base[6]]
+        out, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+        self.assertIn("stages closed 1/1", out[0])
+
+    def test_same_commit_is_not_a_repair(self):
+        messages = (self.base[:3] + [msg("b", line("completed", self.bad[:7], "NEXT @[[r]]")),
+                                     msg("r", "@[[b]] " + line("REJECT", self.bad[:7], "NEXT @[[b]]")),
+                                     msg("r", "@[[c]] " + line("ACCEPT", self.bad, "NEXT @[[c]]"))])
+        out, problems = self.run_room(messages)
+        self.assertIn("rejections repaired 0/1", out[0])
+        self.assertTrue(any("has no repair" in x for x in problems), problems)
+
     def test_update_without_sha(self):
         messages = (self.base[:5] + [msg("b", "@[[r]] still working\nSTATE working stage=1 task=t\nNEXT @[[r]]")]
                     + self.base[5:])
