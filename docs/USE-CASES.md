@@ -93,6 +93,17 @@ event harness (`harness check` and the track suites, which we never read) and by
 
 ## Test cases
 
+### Tiny — iteration case (development only)
+Spec in `cases/tiny/SPEC.md`; checks in `cases/tiny/checks.py`, written from the spec. The same seats and the same cycle as the small case over two endpoints, so the factory can be iterated quickly; it does not replace the small case as evidence.
+
+| Layer | Criterion | How it is proven |
+|---|---|---|
+| Product | Every check passes | `python3 cases/tiny/checks.py http://localhost:8080` exits 0 |
+| Product | The container is healthy within 30 s, also without network | image build from the stage folder, then run with `--network none` and poll `/health` |
+| System | One dispatch, a REJECT on the seeded fault and its repair, every protocol line valid | validator |
+| System | No silent wait left unhandled | watchdog log |
+| System | Time and tokens per seat | cost meter |
+
 ### Small — own notes API (phase F1, PLAN U6)
 Spec in `cases/small/SPEC.md`; checks in `cases/small/checks.py`, written from the spec. One stage, no UI, three base seats.
 

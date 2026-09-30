@@ -120,14 +120,14 @@ CHECKS = [check_health, check_reset, check_create, check_get_and_list_order,
           check_not_found, check_delete]
 
 
-def main():
+def main(checks=CHECKS):
     if len(sys.argv) != 2:
         print("usage: python3 checks.py <base-url>", file=sys.stderr)
         return 2
     base = sys.argv[1].rstrip("/")
     started = time.monotonic()
     results = []
-    for check in CHECKS:
+    for check in checks:
         try:
             call(base, "POST", "/_test/reset")
             check(base)

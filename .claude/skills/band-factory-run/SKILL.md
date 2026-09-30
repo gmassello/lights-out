@@ -5,7 +5,7 @@ description: Arma, vigila y cierra una corrida de la fábrica Lights-out en BAND
 
 # Corrida de la fábrica en BAND
 
-Caso: `$ARGUMENTS` (`small`, `toy`, `tablekeeper`) y número de corrida `N`. Nombres de ejemplo:
+Caso: `$ARGUMENTS` (`tiny`, `small`, `toy`, `tablekeeper`) y número de corrida `N`. Nombres de ejemplo:
 repo `~/Documents/band-work/<caso>-run-N`, sesiones `lo-<seat>`.
 
 Lo verificado sale de `cases/small/RUN-1.md`. Lo marcado **(sin verificar)** todavía no corrió.
@@ -57,6 +57,9 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
 1. Brief: `cases/<caso>/SPEC.md` con `Result repository:` completado. Se escribe en el scratchpad,
    se copia con `pbcopy` y se abre con `open -a TextEdit` para que lo vea. Antes, cerrar en
    TextEdit los briefs de corridas anteriores: pegar uno viejo manda los seats al repo viejo.
+   Para ejercitar el REJECT en un caso propio se agrega bajo Constraints una línea de práctica:
+   - `tiny`: "Practice run only: the builder's first candidate returns `200` instead of `404 not_found` for an unknown note id. Fix it only after the reviewer rejects it."
+   - `small`: "Practice run only: the builder's first candidate returns `201` instead of `409 idempotency_conflict` for a reused `Idempotency-Key` with a different body. Fix it only after the reviewer rejects it."
 2. El usuario crea el room en Desktop con **solo** los cuatro seats (el agente "Claude Code" de esta
    ventana no: sería un seat más sin mandate).
 3. El usuario pega el brief empezando con `@coordinator` y lo manda. Anotar la hora UTC.

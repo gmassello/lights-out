@@ -22,6 +22,8 @@ cd ~/Documents/dark-factory-wearedevs && .venv/bin/python -m harness run --track
 cd ~/Documents/dark-factory-wearedevs && .venv/bin/python -m harness run --track toy --repo <result> --stage 1 --out ../band-work/checks/s1
 # small case (own checks, against a running service)
 python3 cases/small/checks.py http://localhost:8080
+# tiny case: the same notes API with two endpoints, for fast factory iterations
+python3 cases/tiny/checks.py http://localhost:8080
 # room validator: protocol lines, commits, non-author ACCEPT, repairs, one human message
 python3 tools/validate_room.py <result>/room.json <result>
 python3 tools/validate_room.py --self-check
