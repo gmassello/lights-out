@@ -167,6 +167,8 @@ python3 tools/measure_cost.py --self-check
 | La review de Codex en `-s read-only` no alcanza Docker ni la red: queda estática | el reviewer levanta un contenedor por review en su propio puerto y Codex corre con `-s workspace-write -c sandbox_workspace_write.network_access=true -C $(mktemp -d) --skip-git-repo-check` (sin ese flag falla fuera de un repo git): llega al servicio y no escribe en el repo (probado: 9 s) |
 | El costo de Codex sale 0 o falta | los rollouts no están en `~/.claude`: pasarlos como rutas al reviewer (§6.4); `input` excluye el cacheado, igual que "tokens used" de Codex |
 | La cantidad de checks salta entre corridas del mismo spec (tiny: 16 y 26) | contar `[R-nn]` contra `[C-nn]` en el mensaje de checks del reviewer: mismo número y la línea `requirements: N, checks: N` |
+| `NEXT @[[<id>]]` en vez de `NEXT @<seat>` en el room | no es un error: es el token de mención de BAND (`band send` no tiene `--mention`); el validador lo acepta y el bloque común lo documenta |
+| El coordinator pone `stage=` en los pedidos a environment | el mandate trae las líneas literales (`STATE working task=env-prepare`, `task=env-check sha=…`) y el validador lo marca como problema |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 
 ## Modificar / eliminar

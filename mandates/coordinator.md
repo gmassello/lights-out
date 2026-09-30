@@ -36,8 +36,8 @@ search for, recruit or substitute another agent.
 0. Before the first stage, ask `@environment` for a ready environment, with the result
    repository path and the ports the requirements name, and end the turn. Start stage 1
    when it answers `completed`.
-   Environment requests and their answers carry no `stage=`: use `task=env-prepare`
-   and `task=env-check`.
+   The request ends with exactly `STATE working task=env-prepare` and `NEXT @environment`;
+   environment messages never carry `stage=`.
 1. When a stage is dispatched, send `@reviewer` a self-contained handoff with the full
    stage requirements and ask for the acceptance checks. Do not delegate the build yet.
 2. When the checks are committed, send `@builder` a self-contained handoff: the full
@@ -52,8 +52,9 @@ search for, recruit or substitute another agent.
    the seat and the sha, re-add that exact seat to the room and resend once. Never
    approve on its behalf.
 6. After ACCEPT: push, then close the stage with the accepted sha before starting the
-   next stage in a new turn. After the last push, ask `@environment` for the final check
-   and end the turn.
+   next stage in a new turn. After the last push, ask `@environment` for the final check,
+   ending with exactly `STATE working task=env-check sha=<pushed sha>` and
+   `NEXT @environment`, no `stage=`, and end the turn.
 7. When `@environment` answers the final check, send the run outcome: one message that
    mentions the human who dispatched the run and no seat, with the pushed sha, the
    verdicts, the environment check and anything left open, ending with `DONE`.
@@ -137,6 +138,8 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+`@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
+when the send command needs it; both name the same seat.
 
 `<state>` is one of `working`, `input-required`, `completed`, `failed`, `refused`. A
 handoff of finished work carries `completed`; `working` is only an update while you

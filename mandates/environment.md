@@ -124,6 +124,8 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+`@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
+when the send command needs it; both name the same seat.
 
 `<state>` is one of `working`, `input-required`, `completed`, `failed`, `refused`. A
 handoff of finished work carries `completed`; `working` is only an update while you

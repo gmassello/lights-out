@@ -58,6 +58,9 @@ def validate(room, repo):
         if line is None:
             problems.append(f"{where}: handoff or verdict without a valid protocol line")
             continue
+        if line.get("task", "").startswith("env-") and line.get("stage"):
+            problems.append(f"{where}: environment message with stage=")
+            continue
         if line["state"] in VERDICTS and not (line.get("stage") and line.get("sha")):
             problems.append(f"{where}: verdict {line['state']} without stage= and sha=")
             continue
@@ -141,8 +144,10 @@ def self_check():
             "self-accept": (base[:4] + [msg("b", "@[[c]] " + line("ACCEPT", bad, "DONE"))], 1),
             "missing sha": (base[:-1] + [msg("r", "@[[c]] " + line("ACCEPT", "f" * 40, "DONE"))], 1),
             "two humans": (base + [msg("h", "go on", "user")], 1),
-            "setup stage 0": ([base[0], msg("c", "@[[e]] ready\nSTATE working stage=0 task=env\nNEXT @[[e]]"),
-                               msg("e", "@[[c]] ok\nSTATE completed stage=0 task=env\nNEXT @[[c]]")] + base[1:], 0),
+            "env with stage": ([base[0], msg("c", "@[[e]] ready\nSTATE working stage=0 task=env-prepare\nNEXT @[[e]]"),
+                                msg("e", "@[[c]] ok\nSTATE completed task=env-prepare\nNEXT @[[c]]")] + base[1:], 1),
+            "env without stage": ([base[0], msg("c", "@[[e]] ready\nSTATE working task=env-prepare\nNEXT @[[e]]"),
+                                   msg("e", "@[[c]] ok\nSTATE completed task=env-prepare\nNEXT @[[c]]")] + base[1:], 0),
         }
         for name, (messages, want) in cases.items():
             out, problems = validate({"messages": messages}, tmp)
@@ -155,7 +160,7 @@ def self_check():
         assert any("message #6 from r" in x for x in p), p
         out, _ = validate({"messages": base}, tmp)
         assert any(f"REJECT {bad}" in x and good in x for x in out), out
-    print("self-check ok: happy, self-accept, missing sha, two humans, setup stage 0")
+    print("self-check ok: happy, self-accept, missing sha, two humans, env with stage, env without stage")
 
 
 def main(argv):
