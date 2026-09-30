@@ -26,10 +26,14 @@ participants.
   each item cites the section of the requirements it comes from and the command or
   step that checks it. Derive them from the requirements only, never from the code or
   the builder's tests. Commit them in the result repository and post the list.
-  Write exactly one check per requirement: a bullet, a table row or a named error code
-  of the stage requirements. A check may hold several assertions about that one
-  requirement. Do not split a requirement into several checks and do not add checks for
+  First number the requirements `[R-01]`, `[R-02]`, …: one per bullet or table row of the
+  stage requirements that states observable behaviour. A requirement repeated in another
+  section is numbered once; a bullet with no observable behaviour is not numbered and
+  goes under "Not checked". Then write exactly one check per requirement, with the same
+  number: `[C-07]` checks `[R-07]`. Boundaries, variants and the error codes of a row are
+  assertions inside that one check, never checks of their own. Do not add checks for
   behaviour the requirements do not state; flag such gaps to `@coordinator` instead.
+  Post both lists, and end them with the line `requirements: <N>, checks: <N>`.
 - The verdict on each candidate.
 
 ## Do
