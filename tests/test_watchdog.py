@@ -34,6 +34,20 @@ class Due(unittest.TestCase):
     def test_human_mention_is_not_due(self):
         self.assertEqual(due([msg("h", 0, "coordinator", to=["Germán"])], AT, 600, SEATS), [])
 
+    def test_only_the_next_seat_is_due(self):
+        verdict = msg("v", 0, "environment", to=["builder", "coordinator"],
+                      content="REJECT\nSTATE REJECT stage=1 sha=a\nNEXT @[[id-builder]]")
+        self.assertEqual(due([verdict], AT, 600, SEATS), [("builder", "v")])
+
+    def test_done_with_mention_is_not_due(self):
+        closing = msg("d", 0, "environment", to=["coordinator"], content="clean\nSTATE completed\nDONE")
+        self.assertEqual(due([closing], AT, 600, SEATS), [])
+
+    def test_plain_next_handle_is_due(self):
+        handoff = msg("p", 0, "coordinator", to=["builder", "environment"],
+                      content="go\nSTATE working stage=1\nNEXT @gmassello/builder")
+        self.assertEqual(due([handoff], AT, 600, SEATS), [("builder", "p")])
+
     def test_reply_after_now_is_ignored(self):
         late = msg("late", 800, "environment", to=["coordinator"])
         self.assertIn(("environment", "m1"), due([ASK, late], AT, 600, SEATS))

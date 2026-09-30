@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -27,6 +28,17 @@ def mentioned(m, seats):
     return [n for n in names if n in seats and n != m.get("sender_name")]
 
 
+def expected(m, seats):
+    last = last_line(m.get("content"))
+    if last == "DONE":
+        return []
+    found = re.fullmatch(r"NEXT @(?:\[\[(.+)\]\]|(?:\S+/)?(\S+))", last)
+    if not found:
+        return mentioned(m, seats)
+    name = (m.get("mention_names") or {}).get(found.group(1)) if found.group(1) else found.group(2)
+    return [name] if name in seats and name != m.get("sender_name") else []
+
+
 def due(messages, now, wait, seats):
     msgs = sorted((m for m in messages if when(m["inserted_at"]) <= now),
                   key=lambda m: m["inserted_at"])
@@ -34,7 +46,7 @@ def due(messages, now, wait, seats):
     for i, m in enumerate(msgs):
         if m.get("message_type") != "text" or m.get("sender_name") not in seats:
             continue
-        for seat in mentioned(m, seats):
+        for seat in expected(m, seats):
             later = [x for x in msgs[i + 1:] if x.get("sender_name") == seat
                      and x.get("message_type") != "participant"]
             if any(x.get("message_type") == "text" for x in later):
