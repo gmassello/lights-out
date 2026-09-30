@@ -97,6 +97,8 @@ band status --session lo-builder          # pid nuevo, mismo runtime_session, pr
 ## 6. Cierre
 
 1. El usuario descarga el room: ⋮ → Open in Band → ⋮ → Download → **Download full session**.
+   O yo en Chrome, con permiso del usuario: `app.band.ai/sessions/<room-id>` → "Conversation
+   options" (⋮) → Download → Download full session; baja como `~/Downloads/<nombre-del-room>.json`.
    Se copia tal cual a `$R/room.json`. Confirmar que el watchdog salió y adjuntar su log a
    `RUN-N.md` (cada reinicio que hizo es un hallazgo).
 2. Validador: `python3 tools/validate_room.py $R/room.json $R`.
