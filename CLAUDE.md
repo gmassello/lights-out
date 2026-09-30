@@ -29,6 +29,7 @@ python3 tools/validate_room.py <result>/room.json <result>
 python3 tools/validate_room.py --self-check
 # cost meter: tokens per seat inside a stage window (seat alone resolves its sessions via band usage)
 python3 tools/measure_cost.py <start-iso> <end-iso> coordinator builder reviewer environment
+# reviewer with its codex exec reviews: reviewer=<session-id>,<~/.codex/sessions/.../rollout-*.jsonl>
 python3 tools/measure_cost.py --self-check
 # silent-seat watchdog: restarts a mentioned seat idle for 10 min without answering (never writes to the room)
 python3 tools/watchdog.py <room-id> --seats coordinator,builder,reviewer,environment

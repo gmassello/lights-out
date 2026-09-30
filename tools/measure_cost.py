@@ -52,6 +52,20 @@ def band_sessions(seat):
     return sessions
 
 
+def codex_usage(entry):
+    payload = entry.get("payload")
+    if not isinstance(payload, dict) or payload.get("type") != "token_count" or not entry.get("timestamp"):
+        return None
+    last = (payload.get("info") or {}).get("last_token_usage")
+    if not isinstance(last, dict):
+        return None
+    cached = int(last.get("cached_input_tokens") or 0)
+    return {"input_tokens": int(last.get("input_tokens") or 0) - cached,
+            "output_tokens": int(last.get("output_tokens") or 0),
+            "cache_read_input_tokens": cached,
+            "cache_creation_input_tokens": int(last.get("cache_write_input_tokens") or 0)}
+
+
 def read(paths):
     seen, has_usage = {}, False
     for path in paths:
@@ -59,6 +73,11 @@ def read(paths):
             try:
                 entry = json.loads(raw)
             except ValueError:
+                continue
+            codex = codex_usage(entry)
+            if codex is not None:
+                has_usage = True
+                seen[f"{path}:{entry.get('ordinal')}"] = (when(entry["timestamp"]), codex)
                 continue
             message = entry.get("message")
             if not isinstance(message, dict) or not entry.get("timestamp"):
@@ -135,16 +154,28 @@ def self_check():
                                   line("m2", "2026-09-28T10:30:00Z", 20),
                                   line("m3", "2026-09-28T12:00:00Z", 999)])
         idle = write("reviewer", [line("r1", "2026-09-28T09:00:00Z")])
+        codex = Path(tmp) / "rollout.jsonl"
+        codex.write_text("\n".join(json.dumps(l) for l in [
+            {"timestamp": "2026-09-28T10:10:00Z", "ordinal": 0, "type": "session_meta", "payload": {"cwd": "/r"}},
+            {"timestamp": "2026-09-28T10:10:05Z", "ordinal": 7, "type": "event_msg",
+             "payload": {"type": "token_count", "info": {"last_token_usage": {
+                 "input_tokens": 300, "cached_input_tokens": 100, "cache_write_input_tokens": 0,
+                 "output_tokens": 40}}}},
+            {"timestamp": "2026-09-28T10:10:06Z", "ordinal": 8, "type": "event_msg",
+             "payload": {"type": "token_count", "info": None}}]))
+        mixed = write("verifier", [line("v1", "2026-09-28T10:02:00Z")])
+        mixed = f"{mixed},{codex}"
         bare = write("coordinator", [{"timestamp": "2026-09-28T10:05:00Z",
                                       "message": {"id": "c1", "content": "x"}}])
-        out = measure("2026-09-28T10:00:00Z", "2026-09-28T11:00:00Z", [split, idle, bare])
+        out = measure("2026-09-28T10:00:00Z", "2026-09-28T11:00:00Z", [split, idle, bare, mixed])
         assert out[0].startswith("measure_cost:") and out[0].endswith("partial"), out
         assert "builder: input=2 output=30 cache_read=200 cache_creation=10 active=0:29:00" in out[1], out
         assert out[2].startswith("reviewer: input=0 output=0 cache_read=0 cache_creation=0 active=0:00:00"), out
         assert out[3].endswith("partial"), out
+        assert "verifier: input=201 output=50 cache_read=200 cache_creation=5 active=0:08:05" in out[4], out
         assert main(["2026-09-28T10:00:00Z", "2026-09-28T11:00:00Z", bare]) == 0
         assert main(["nope", "2026-09-28T11:00:00Z", bare]) == 2
-    print("self-check ok: split id once, idle seat zero, no usage partial, outside window excluded")
+    print("self-check ok: split id once, idle seat zero, no usage partial, outside window excluded, codex rollout")
 
 
 def main(argv):

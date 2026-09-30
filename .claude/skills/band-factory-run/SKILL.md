@@ -112,7 +112,10 @@ band status --session lo-builder          # pid nuevo, mismo runtime_session, pr
    ```
 4. Costo: mapear seat → sesiones buscando la primera línea del mandate en los transcripts
    (`grep -l "You plan and coordinate\|You build what\|You decide whether\|You keep the machine" ~/.claude/projects/<repo-slug>/*.jsonl`);
-   un seat reiniciado tiene más de una. Después:
+   un seat reiniciado tiene más de una. Los subagentes del reviewer entran solos (`<sesión>/subagents/`);
+   sus reviews de `codex exec` no: son los rollouts con `cwd` igual a `$R`
+   (`grep -l "\"cwd\":\"$R\"" ~/.codex/sessions/<aaaa>/<mm>/<dd>/rollout-*.jsonl`) y se pasan como
+   rutas en la lista del reviewer (`reviewer=<id>,<rollout.jsonl>`). Después:
    ```bash
    python3 tools/measure_cost.py <inicio> <fin> coordinator=<id> builder=<id>,<id> reviewer=<id> environment=<id>
    band usage refresh && band usage sessions --json          # comparar totales por sesión
@@ -157,6 +160,8 @@ python3 tools/measure_cost.py --self-check
 | El despacho nombra el repo de otra corrida | leer el primer mensaje y comparar con `$R` (§3.4) |
 | Un seat espera una respuesta que se perdió (`staged: true` y el turno termina con error) y nada lo despierta | lo destraba el watchdog (§3.5) con `band restart` del seat que debía contestar; no agrega mensajes al room. Los mandates publican con `send`, no con la respuesta staged |
 | Un seat esquiva un guard (p. ej. un remote falso para que `claude-git-guard` deje commitear) | regla "Never work around a guard" del bloque común; revisar los `tool_call` del room al cerrar |
+| `codex exec` del reviewer carga los MCP y la config personal de `~/.codex` y tarda en arrancar | `--ignore-user-config`: la auth de ChatGPT sigue andando (probado) |
+| El costo de Codex sale 0 o falta | los rollouts no están en `~/.claude`: pasarlos como rutas al reviewer (§6.4); `input` excluye el cacheado, igual que "tokens used" de Codex |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 
 ## Modificar / eliminar
