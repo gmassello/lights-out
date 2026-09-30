@@ -52,7 +52,7 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
 `~/.claude/projects/<slug-del-repo-nuevo>/`. Las instrucciones siguen vinculadas en vivo a
 `mandates/` (`band agent instructions show --reveal`).
 
-## 3. Room y despacho (los hace el usuario)
+## 3. Room y despacho
 
 1. Brief: `cases/<caso>/SPEC.md` con `Result repository:` completado. Se escribe en el scratchpad,
    se copia con `pbcopy` y se abre con `open -a TextEdit` para que lo vea. Antes, cerrar en
@@ -60,9 +60,14 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
    Para ejercitar el REJECT en un caso propio se agrega bajo Constraints una línea de práctica:
    - `tiny`: "Practice run only: the builder's first candidate returns `200` instead of `404 not_found` for an unknown note id. Fix it only after the reviewer rejects it."
    - `small`: "Practice run only: the builder's first candidate returns `201` instead of `409 idempotency_conflict` for a reused `Idempotency-Key` with a different body. Fix it only after the reviewer rejects it."
-2. El usuario crea el room en Desktop con **solo** los cuatro seats (el agente "Claude Code" de esta
-   ventana no: sería un seat más sin mandate).
-3. El usuario pega el brief empezando con `@coordinator` y lo manda. Anotar la hora UTC.
+2. Room con **solo** los cuatro seats (el agente "Claude Code" de esta ventana no: sería un seat
+   más sin mandate) y con el humano como dueño. Lo crea el usuario en Desktop, o yo en Chrome con
+   su sesión: app.band.ai → Dashboard → Add new chat room → los cuatro seats → Create chat. Después
+   `band room rename <room-id> <caso>-run-N`. `band chat new` no sirve: el dueño queda el agente,
+   el humano recibe 403 al renombrar y el room no se puede borrar.
+3. Despacho: el brief empezando con `@coordinator`. Lo manda el usuario, o yo si me lo pide:
+   `band room send <room-id> "@[[<coordinator-id>]] $(cat <brief>)" --mention <coordinator-id>`
+   (el id sale de `band room messages` o de `band chat participants`). Anotar la hora UTC.
 4. Apenas despachado, leer el primer mensaje (`band room messages <room-id> --json --type text`)
    y confirmar que su línea `Result repository:` es `$R`. Si no coincide, parar antes de que un
    seat commitee y repetir con un room nuevo.
@@ -143,6 +148,9 @@ python3 tools/measure_cost.py --self-check
 | `band room messages --json` y `room.json` difieren en las claves | la API en vivo usa snake_case; la descarga, camelCase (`senderType: Agent/User`) |
 | El validador marca la etapa `open` con un ACCEPT sobre un commit del reviewer | el `sha=` del veredicto es el candidato del builder (mandate del reviewer) |
 | `NEXT DONE` o un `STATE` sin segunda línea | inválidos: `NEXT @<seat>` o `DONE` |
+| `band chat new` crea el room con el agente como dueño | crear el room en la web o en Desktop; después no se puede renombrar ni borrar |
+| `band chat add` o `chat new` fallan con "daemon unavailable: decoding response" | el participante igual queda agregado: confirmar con `band chat participants` antes de reintentar |
+| `band room messages --json` devuelve solo los 100 mensajes más nuevos (`has_more`, `--page N`) sin avisar | paginar hasta cubrir la ventana; `tools/watchdog.py` ya lo hace |
 | Un agente sin mandate en el room rompe el gate de mandates | el room tiene solo los seats con mandate |
 | El despacho nombra el repo de otra corrida | leer el primer mensaje y comparar con `$R` (§3.4) |
 | Un seat espera una respuesta que se perdió (`staged: true` y el turno termina con error) y nada lo despierta | lo destraba el watchdog (§3.5) con `band restart` del seat que debía contestar; no agrega mensajes al room. Los mandates publican con `send`, no con la respuesta staged |

@@ -25,6 +25,10 @@ participants.
   each item cites the section of the requirements it comes from and the command or
   step that checks it. Derive them from the requirements only, never from the code or
   the builder's tests. Commit them in the result repository and post the list.
+  Write exactly one check per requirement: a bullet, a table row or a named error code
+  of the stage requirements. A check may hold several assertions about that one
+  requirement. Do not split a requirement into several checks and do not add checks for
+  behaviour the requirements do not state; flag such gaps to `@coordinator` instead.
 - The verdict on each candidate.
 
 ## Do
