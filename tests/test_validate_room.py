@@ -108,6 +108,27 @@ class ValidateRoom(unittest.TestCase):
         self.assertIn("rejections repaired 0/1", out[0])
         self.assertTrue(any("has no repair" in x for x in problems), problems)
 
+    def test_builder_answer_is_not_a_verdict(self):
+        messages = self.base[:5] + [msg("b", "@[[r]] " + line("ACCEPT", self.good, "NEXT @[[r]]")), self.base[6]]
+        out, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+        self.assertIn("verdicts 2", out[0])
+        self.assertIn("stages closed 1/1", out[0])
+        self.assertIn("rejections repaired 1/1", out[0])
+
+    def test_dispute_and_clarify_are_valid(self):
+        messages = (self.base[:5] + [msg("b", "@[[r]] " + line("DISPUTE", self.bad, "NEXT @[[r]]")),
+                                     msg("b", "@[[r]] " + line("CLARIFY", self.bad, "NEXT @[[r]]"))]
+                    + self.base[5:])
+        out, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+        self.assertIn("verdicts 2", out[0])
+
+    def test_self_accept_of_an_unannounced_sha(self):
+        messages = self.base[:5] + [msg("b", "@[[c]] " + line("ACCEPT", self.good, "NEXT @[[c]]"))]
+        _, problems = self.run_room(messages)
+        self.assertTrue(any("stage 1: open" in x for x in problems), problems)
+
     def test_update_without_sha(self):
         messages = (self.base[:5] + [msg("b", "@[[r]] still working\nSTATE working stage=1 task=t\nNEXT @[[r]]")]
                     + self.base[5:])

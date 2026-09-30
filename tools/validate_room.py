@@ -7,6 +7,7 @@ from pathlib import Path
 
 STATES = {"working", "input-required", "completed", "failed", "refused"}
 VERDICTS = {"ACCEPT", "REJECT", "INSUFFICIENT_EVIDENCE"}
+REPLIES = {"CONFORMS", "DEVIATES", "DISPUTE", "CLARIFY"}
 STATE_LINE = re.compile(r"^STATE (\S+)((?: \w+=(?:\[[^\]]*\]|\S+))*)$")
 FIELD = re.compile(r"(\w+)=(\[[^\]]*\]|\S+)")
 NEXT_LINE = re.compile(r"^(NEXT @\S+|DONE)$")
@@ -19,7 +20,7 @@ def protocol(content):
     if len(lines) < 2:
         return None
     state, nxt = STATE_LINE.match(lines[-2]), NEXT_LINE.match(lines[-1])
-    if not state or not nxt or state.group(1) not in STATES | VERDICTS:
+    if not state or not nxt or state.group(1) not in STATES | VERDICTS | REPLIES:
         return None
     return {"state": state.group(1), **dict(FIELD.findall(state.group(2)))}
 
@@ -76,8 +77,9 @@ def validate(room, repo):
 
     authors = {}
     for i, sender, who, line in parsed:
-        if line.get("sha") and line["state"] not in VERDICTS:
-            authors.setdefault(line["sha"], sender)
+        sha = line.get("sha")
+        if sha and (line["state"] not in VERDICTS or (line["state"] == "ACCEPT" and sha not in authors)):
+            authors.setdefault(sha, sender)
 
     def valid_accept(entry, stage):
         i, sender, who, line = entry
@@ -85,7 +87,7 @@ def validate(room, repo):
                 and authors.get(line["sha"]) not in (None, sender))
 
     stages = sorted({l["stage"] for *_, l in parsed if l.get("stage") not in (None, "0")}, key=str)
-    verdicts = [e for e in parsed if e[3]["state"] in VERDICTS]
+    verdicts = [e for e in parsed if e[3]["state"] in VERDICTS and authors.get(e[3]["sha"]) != e[1]]
     details, closed = [], 0
     for stage in stages:
         accepts = [e for e in parsed if valid_accept(e, stage)]
