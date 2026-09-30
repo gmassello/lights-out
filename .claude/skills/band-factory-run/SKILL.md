@@ -161,6 +161,10 @@ python3 tools/measure_cost.py --self-check
 | Un seat espera una respuesta que se perdió (`staged: true` y el turno termina con error) y nada lo despierta | lo destraba el watchdog (§3.5) con `band restart` del seat que debía contestar; no agrega mensajes al room. Los mandates publican con `send`, no con la respuesta staged |
 | Un seat esquiva un guard (p. ej. un remote falso para que `claude-git-guard` deje commitear) | regla "Never work around a guard" del bloque común; revisar los `tool_call` del room al cerrar |
 | `codex exec` del reviewer carga los MCP y la config personal de `~/.codex` y tarda en arrancar | `--ignore-user-config`: la auth de ChatGPT sigue andando (probado) |
+| Con `--ignore-user-config`, `codex exec` corre con `reasoning effort: none` | `-c model_reasoning_effort=medium` en el comando del mandate (tiny-run-3: la review sin razonamiento se perdió un DEVIATES) |
+| `codex exec` en segundo plano sin `</dev/null` se queda en "Reading additional input from stdin" | `</dev/null` en el comando; si no, el seat lo relanza y quedan dos reviews |
+| La review de Codex tarda ~2 min: explora el repo (130k tokens) y abre subagentes propios | prompt con el diff del candidato y "no explorar más allá del diff", `--disable multi_agent` y tope de 3 min (prueba: 23 s, 4k tokens, mismos 3 DEVIATES) |
+| La review de Codex en `-s read-only` no alcanza Docker | es estática; la ejecución la cubre el release check del reviewer |
 | El costo de Codex sale 0 o falta | los rollouts no están en `~/.claude`: pasarlos como rutas al reviewer (§6.4); `input` excluye el cacheado, igual que "tokens used" de Codex |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 

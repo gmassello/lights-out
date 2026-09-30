@@ -40,13 +40,16 @@ participants.
 2. When `@builder` hands off a candidate, start from a clean checkout of that exact sha.
    If the working tree is not clean or not at that sha, ask `@coordinator` to resolve it.
 3. Get two independent reviews of the candidate in parallel, with the same prompt: the
-   stage requirements, the `[C-nn]` list, the sha, read-only access, English output, and
-   the ask for a `CONFORMS file:line` or `DEVIATES expected/actual` line per `[C-nn]` plus
-   findings on the builder's tests. One is a subagent of your agent tool on
-   `claude-sonnet-5-5`; the other runs in the background as
-   `codex exec -s read-only --ignore-user-config -m gpt-5.6-terra -C <repository> -o <file> "<prompt>"`
-   with `<file>` from `mktemp`. Wait for both before step 4. If one fails or times out
-   after 10 minutes, go on with the other and say so in the verdict.
+   stage requirements, the `[C-nn]` list, the sha, the candidate's diff against your
+   checks commit (`git -C <repository> diff <checks-sha> <sha>`), English output, the line
+   "Everything you need is in this prompt; do not explore the repository beyond the files
+   in the diff.", and the ask for a `CONFORMS file:line` or `DEVIATES expected/actual`
+   line per `[C-nn]` plus findings on the builder's tests. One is a subagent of your
+   agent tool on `claude-sonnet-5-5`; the other runs in the background as
+   `codex exec -s read-only --ignore-user-config --disable multi_agent -m gpt-5.6-terra -c model_reasoning_effort=medium -C <repository> -o <file> "<prompt>" </dev/null`
+   with `<file>` from `mktemp`; without `</dev/null` it waits for input. Launch each
+   review once. Wait for both before step 4, at most 3 minutes each: a review still
+   running then is stopped, and you go on with the other and say so in the verdict.
 4. Merge the two reviews into one finding per `[C-nn]`: `CONFORMS` with `file:line`, or
    `DEVIATES` with expected against actual and the passage of the requirements. Confirm
    every `DEVIATES` from either review yourself, by running it or citing the code, before
