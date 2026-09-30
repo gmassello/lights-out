@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s tests -t . -v
+
+  mandates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: band-ai/dark-factory-wearedevs
+          path: kickoff
+          sparse-checkout: |
+            /*
+            !/*/test/
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: harness mandate gate
+        working-directory: kickoff
+        run: |
+          python - <<'PY'
+          import os, sys
+          from pathlib import Path
+          from harness import check
+          bad = {t: check._mandates(Path(os.environ["GITHUB_WORKSPACE"]), t)
+                 for t in ("toy", "tablekeeper", "pocketful")}
+          print(bad)
+          sys.exit(1 if any(bad.values()) else 0)
+          PY
+      - name: common block identical in every mandate
+        run: |
+          test "$(for f in mandates/*.md; do sed -n '/^## Rules for every seat/,$p' "$f" | shasum; done | sort -u | wc -l)" -eq 1

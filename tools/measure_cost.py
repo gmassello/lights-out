@@ -2,7 +2,6 @@
 import json
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -124,6 +123,10 @@ def measure(start, end, seats):
             grand[k] += sums[k]
         flag = "" if has_usage else " partial"
         partial = partial or not has_usage
+        if band is not None and active is None:
+            flag, partial = " partial: no band session in the window", True
+            print(f"measure_cost: no {name} session in band usage covers the window;"
+                  f" pass {name}=<session-id>", file=sys.stderr)
         rows.append(f"{name}: {fmt(sums)} active={active or '0:00:00'}{flag}")
         for session in band or []:
             whole, _ = totals(read(transcripts(session["sessionId"]))[0])
@@ -137,51 +140,15 @@ def measure(start, end, seats):
 
 
 def self_check():
-    with tempfile.TemporaryDirectory() as tmp:
-        def write(name, lines):
-            path = Path(tmp) / f"{name}.jsonl"
-            path.write_text("\n".join(json.dumps(l) for l in lines))
-            return f"{name}={path}"
-
-        def line(mid, ts, out=10):
-            return {"timestamp": ts, "message": {"id": mid, "usage": {
-                "input_tokens": 1, "output_tokens": out,
-                "cache_read_input_tokens": 100, "cache_creation_input_tokens": 5}}}
-
-        split = write("builder", [line("m1", "2026-09-28T10:01:00Z"),
-                                  line("m1", "2026-09-28T10:01:01Z"),
-                                  line("m1", "2026-09-28T10:01:02Z"),
-                                  line("m2", "2026-09-28T10:30:00Z", 20),
-                                  line("m3", "2026-09-28T12:00:00Z", 999)])
-        idle = write("reviewer", [line("r1", "2026-09-28T09:00:00Z")])
-        codex = Path(tmp) / "rollout.jsonl"
-        codex.write_text("\n".join(json.dumps(l) for l in [
-            {"timestamp": "2026-09-28T10:10:00Z", "ordinal": 0, "type": "session_meta", "payload": {"cwd": "/r"}},
-            {"timestamp": "2026-09-28T10:10:05Z", "ordinal": 7, "type": "event_msg",
-             "payload": {"type": "token_count", "info": {"last_token_usage": {
-                 "input_tokens": 300, "cached_input_tokens": 100, "cache_write_input_tokens": 0,
-                 "output_tokens": 40}}}},
-            {"timestamp": "2026-09-28T10:10:06Z", "ordinal": 8, "type": "event_msg",
-             "payload": {"type": "token_count", "info": None}}]))
-        mixed = write("verifier", [line("v1", "2026-09-28T10:02:00Z")])
-        mixed = f"{mixed},{codex}"
-        bare = write("coordinator", [{"timestamp": "2026-09-28T10:05:00Z",
-                                      "message": {"id": "c1", "content": "x"}}])
-        out = measure("2026-09-28T10:00:00Z", "2026-09-28T11:00:00Z", [split, idle, bare, mixed])
-        assert out[0].startswith("measure_cost:") and out[0].endswith("partial"), out
-        assert "builder: input=2 output=30 cache_read=200 cache_creation=10 active=0:29:00" in out[1], out
-        assert out[2].startswith("reviewer: input=0 output=0 cache_read=0 cache_creation=0 active=0:00:00"), out
-        assert out[3].endswith("partial"), out
-        assert "verifier: input=201 output=50 cache_read=200 cache_creation=5 active=0:08:05" in out[4], out
-        assert main(["2026-09-28T10:00:00Z", "2026-09-28T11:00:00Z", bare]) == 0
-        assert main(["nope", "2026-09-28T11:00:00Z", bare]) == 2
-    print("self-check ok: split id once, idle seat zero, no usage partial, outside window excluded, codex rollout")
+    import unittest
+    root = Path(__file__).resolve().parent.parent
+    suite = unittest.defaultTestLoader.discover(str(root / "tests"), pattern="test_measure_cost.py", top_level_dir=str(root))
+    return unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
 
 
 def main(argv):
     if argv == ["--self-check"]:
-        self_check()
-        return 0
+        return 0 if self_check() else 1
     if len(argv) < 3:
         print(USAGE, file=sys.stderr)
         return 2

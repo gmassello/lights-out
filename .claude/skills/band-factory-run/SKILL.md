@@ -148,7 +148,7 @@ python3 tools/measure_cost.py --self-check
 | El seat no puede commitear: `claude-git-guard` lo niega y le pide al humano un `!` | origin en `github.com/gmassello/*`, email personal y la regla de `git -C` en los mandates |
 | El CLAUDE.md global le impone español al seat | la regla "English only" del bloque común |
 | `band restart` abre otra sesión de Claude Code | el costo del seat suma todas sus sesiones |
-| `band usage` muestra los seats como "(unattributed)" | pasar los ids de sesión explícitos a `measure_cost.py` |
+| `band usage` muestra los seats como "(unattributed)" | pasar los ids de sesión explícitos a `measure_cost.py`; con el seat solo, la fila sale `partial: no band session in the window` |
 | Los checks pasan contra un server que dejó un seat en el host | `lsof` del puerto antes y apagar el huérfano |
 | `band room messages --json` y `room.json` difieren en las claves | la API en vivo usa snake_case; la descarga, camelCase (`senderType: Agent/User`) |
 | El validador marca la etapa `open` con un ACCEPT sobre un commit del reviewer | el `sha=` del veredicto es el candidato del builder (mandate del reviewer) |
@@ -169,6 +169,7 @@ python3 tools/measure_cost.py --self-check
 | La cantidad de checks salta entre corridas del mismo spec (tiny: 16 y 26) | contar `[R-nn]` contra `[C-nn]` en el mensaje de checks del reviewer: mismo número y la línea `requirements: N, checks: N` |
 | `NEXT @[[<id>]]` en vez de `NEXT @<seat>` en el room | no es un error: es el token de mención de BAND (`band send` no tiene `--mention`); el validador lo acepta y el bloque común lo documenta |
 | El coordinator pone `stage=` en los pedidos a environment | el mandate trae las líneas literales (`STATE working task=env-prepare`, `task=env-check sha=…`) y el validador lo marca como problema |
+| environment responde el chequeo final mencionando al coordinator pero termina en `DONE` | el mandate trae la línea literal `NEXT @coordinator`; el validador marca todo mensaje que menciona un seat y termina en `DONE` |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 
 ## Modificar / eliminar

@@ -24,6 +24,9 @@ cd ~/Documents/dark-factory-wearedevs && .venv/bin/python -m harness run --track
 python3 cases/small/checks.py http://localhost:8080
 # tiny case: the same notes API with two endpoints, for fast factory iterations
 python3 cases/tiny/checks.py http://localhost:8080
+# unit tests of the tools (stdlib unittest; CI runs them plus the mandate gate on every push)
+python3 -m unittest discover -s tests -t .
+python3 -m unittest tests.test_validate_room.ValidateRoom.test_happy
 # room validator: protocol lines, commits, non-author ACCEPT, repairs, one human message
 python3 tools/validate_room.py <result>/room.json <result>
 python3 tools/validate_room.py --self-check

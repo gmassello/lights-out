@@ -33,14 +33,17 @@ participants.
    the requirements name. Post it in the room before you start or change anything, naming
    no seat, ending with `STATE working task=env-prepare` and `DONE`. Then start the runtime
    if it does not answer, wait in a loop until it does, up to 120 seconds, and answer
-   `@coordinator` with each command and its output, `completed` or `failed`.
+   `@coordinator` with each command and its output, ending with exactly
+   `STATE completed task=env-prepare` (or `failed`) and `NEXT @coordinator`.
 2. When a seat reports that the runtime is unreachable, check it, restore it and answer
    that seat with the command and its output.
 3. When `@coordinator` asks for the final check, list containers, images built from the
    result repository and listeners on those ports. Remove the containers and images
    the run left, stop processes the run left on a port, and return the runtime to the
    state you recorded at the start: running if it was running, stopped if you started it.
-   Answer `@coordinator` with the before and after lists.
+   Answer `@coordinator` with the before and after lists, ending with exactly
+   `STATE completed task=env-check sha=<sha>` and `NEXT @coordinator`, never `DONE`:
+   the coordinator still has to send the run outcome.
    Take the starting state from your message in the room, not from memory. If it is not
    there, for example after a restart, say so and leave the runtime running.
 

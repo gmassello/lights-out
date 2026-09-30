@@ -3,7 +3,6 @@ import json
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 STATES = {"working", "input-required", "completed", "failed", "refused"}
@@ -58,6 +57,8 @@ def validate(room, repo):
         if line is None:
             problems.append(f"{where}: handoff or verdict without a valid protocol line")
             continue
+        if addresses and content.strip().splitlines()[-1].strip() == "DONE":
+            problems.append(f"{where}: mentions a seat but ends with DONE")
         if line.get("task", "").startswith("env-") and line.get("stage"):
             problems.append(f"{where}: environment message with stage=")
             continue
@@ -95,7 +96,7 @@ def validate(room, repo):
     rejects = [e for e in verdicts if e[3]["state"] == "REJECT"]
     repaired = 0
     for i, sender, who, line in rejects:
-        fix = next((e for e in parsed if e[0] > i and e[3]["sha"] != line["sha"]
+        fix = next((e for e in parsed if e[0] > i and e[3].get("sha") not in (None, line["sha"])
                     and valid_accept(e, line["stage"])), None)
         if fix:
             repaired += 1
@@ -114,59 +115,15 @@ def validate(room, repo):
 
 
 def self_check():
-    with tempfile.TemporaryDirectory() as tmp:
-        git = ["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t"]
-        subprocess.run(["git", "init", "-q", tmp], check=True)
-        shas = []
-        for n in range(3):
-            subprocess.run(git + ["commit", "-q", "--allow-empty", "-m", str(n)], check=True)
-            shas.append(subprocess.run(git + ["rev-parse", "HEAD"], capture_output=True,
-                                       text=True, check=True).stdout.strip())
-        checks, bad, good = shas
-
-        def msg(sender, text, kind="agent"):
-            return {"senderId": sender, "senderName": sender, "senderType": kind,
-                    "messageType": "text", "content": text}
-
-        def line(state, sha, nxt):
-            return f"body\nSTATE {state} stage=1 task=t sha={sha}\n{nxt}"
-
-        human = msg("h", "brief", "user")
-        base = [human,
-                msg("c", "@[[r]] checks please\nSTATE working stage=1 task=t\nNEXT @[[r]]"),
-                msg("r", line("completed", checks, "NEXT @[[c]]")),
-                msg("b", line("completed", bad, "NEXT @[[r]]")),
-                msg("r", "@[[b]] " + line("REJECT", bad, "NEXT @[[b]]")),
-                msg("b", line("completed", good, "NEXT @[[r]]")),
-                msg("r", "@[[c]] " + line("ACCEPT", good, "NEXT @[[c]]"))]
-        cases = {
-            "happy": (base, 0),
-            "self-accept": (base[:4] + [msg("b", "@[[c]] " + line("ACCEPT", bad, "DONE"))], 1),
-            "missing sha": (base[:-1] + [msg("r", "@[[c]] " + line("ACCEPT", "f" * 40, "DONE"))], 1),
-            "two humans": (base + [msg("h", "go on", "user")], 1),
-            "env with stage": ([base[0], msg("c", "@[[e]] ready\nSTATE working stage=0 task=env-prepare\nNEXT @[[e]]"),
-                                msg("e", "@[[c]] ok\nSTATE completed task=env-prepare\nNEXT @[[c]]")] + base[1:], 1),
-            "env without stage": ([base[0], msg("c", "@[[e]] ready\nSTATE working task=env-prepare\nNEXT @[[e]]"),
-                                   msg("e", "@[[c]] ok\nSTATE completed task=env-prepare\nNEXT @[[c]]")] + base[1:], 0),
-        }
-        for name, (messages, want) in cases.items():
-            out, problems = validate({"messages": messages}, tmp)
-            got = 1 if problems else 0
-            assert got == want, (name, out)
-            assert out[0].startswith("validate_room:"), name
-        _, p = validate({"messages": cases["self-accept"][0]}, tmp)
-        assert any("stage 1: open" in x for x in p), p
-        _, p = validate({"messages": cases["missing sha"][0]}, tmp)
-        assert any("message #6 from r" in x for x in p), p
-        out, _ = validate({"messages": base}, tmp)
-        assert any(f"REJECT {bad}" in x and good in x for x in out), out
-    print("self-check ok: happy, self-accept, missing sha, two humans, env with stage, env without stage")
+    import unittest
+    root = Path(__file__).resolve().parent.parent
+    suite = unittest.defaultTestLoader.discover(str(root / "tests"), pattern="test_validate_room.py", top_level_dir=str(root))
+    return unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
 
 
 def main(argv):
     if argv == ["--self-check"]:
-        self_check()
-        return 0
+        return 0 if self_check() else 1
     if len(argv) != 2:
         print(USAGE, file=sys.stderr)
         return 2

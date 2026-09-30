@@ -4,8 +4,10 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
+CLOSER = "coordinator"
 USAGE = ("usage: watchdog.py <room-id> --seats a,b,c [--wait 600] [--interval 30] [--dry-run [--now ISO]]"
          " | --self-check")
 
@@ -44,8 +46,9 @@ def due(messages, now, wait, seats):
 
 
 def finished(messages, seats):
-    return any(m.get("message_type") == "text" and m.get("sender_name") in seats
-               and last_line(m.get("content")) == "DONE" and not mentioned(m, seats)
+    return any(m.get("message_type") == "text" and m.get("sender_name") == CLOSER
+               and last_line(m.get("content")) == "DONE" and m.get("mention_names")
+               and not mentioned(m, seats)
                for m in messages)
 
 
@@ -98,31 +101,15 @@ def run(args):
 
 
 def self_check():
-    seats = {"coordinator", "builder", "environment"}
-    t0 = datetime(2026, 9, 29, 22, 0, tzinfo=timezone.utc)
-
-    def msg(mid, sec, sender, kind="text", to=(), content="x"):
-        return {"id": mid, "inserted_at": (t0 + timedelta(seconds=sec)).isoformat(),
-                "sender_name": sender, "message_type": kind, "content": content,
-                "mention_names": {f"id-{n}": n for n in to}}
-
-    ask = msg("m1", 0, "coordinator", to=["environment"])
-    at = t0 + timedelta(seconds=700)
-    assert due([ask], at, 600, seats) == [("environment", "m1")]
-    assert ("environment", "m1") not in due([ask, msg("r", 30, "environment", to=["coordinator"])], at, 600, seats)
-    assert due([ask, msg("t", 400, "environment", kind="tool_call")], at, 600, seats) == []
-    assert due([ask], t0 + timedelta(seconds=300), 600, seats) == []
-    assert due([msg("h", 0, "coordinator", to=["Germán"])], at, 600, seats) == []
-    assert ("environment", "m1") in due([ask, msg("late", 800, "environment", to=["coordinator"])], at, 600, seats)
-    assert not finished([ask], seats)
-    assert finished([msg("o", 5, "coordinator", to=["Germán"], content="done\nSTATE x\nDONE")], seats)
-    print("self-check ok: idle seat due, answered not due, busy not due, early not due, human not due")
+    import unittest
+    root = Path(__file__).resolve().parent.parent
+    suite = unittest.defaultTestLoader.discover(str(root / "tests"), pattern="test_watchdog.py", top_level_dir=str(root))
+    return unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
 
 
 def main(argv):
     if argv == ["--self-check"]:
-        self_check()
-        return 0
+        return 0 if self_check() else 1
     p = argparse.ArgumentParser(usage=USAGE)
     p.add_argument("room")
     p.add_argument("--seats", required=True)
