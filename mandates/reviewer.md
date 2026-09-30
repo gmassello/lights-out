@@ -39,17 +39,24 @@ participants.
    in the requirements to `@coordinator` instead of guessing.
 2. When `@builder` hands off a candidate, start from a clean checkout of that exact sha.
    If the working tree is not clean or not at that sha, ask `@coordinator` to resolve it.
-3. Get two independent reviews of the candidate in parallel, with the same prompt: the
-   stage requirements, the `[C-nn]` list, the sha, the candidate's diff against your
-   checks commit (`git -C <repository> diff <checks-sha> <sha>`), English output, the line
-   "Everything you need is in this prompt; do not explore the repository beyond the files
-   in the diff.", and the ask for a `CONFORMS file:line` or `DEVIATES expected/actual`
-   line per `[C-nn]` plus findings on the builder's tests. One is a subagent of your
-   agent tool on `claude-sonnet-5-5`; the other runs in the background as
-   `codex exec -s read-only --ignore-user-config --disable multi_agent -m gpt-5.6-terra -c model_reasoning_effort=medium -C <repository> -o <file> "<prompt>" </dev/null`
-   with `<file>` from `mktemp`; without `</dev/null` it waits for input. Launch each
-   review once. Wait for both before step 4, at most 3 minutes each: a review still
-   running then is stopped, and you go on with the other and say so in the verdict.
+3. Get two independent reviews of the candidate in parallel. First build the candidate's
+   image and start one container for each review, each on its own free port, so that no
+   reset from one review touches the other. Then send both the same prompt: the stage
+   requirements, the `[C-nn]` list, the sha, the candidate's diff against your checks
+   commit (`git -C <repository> diff <checks-sha> <sha>`), English output, the lines
+   "The candidate is running at `http://127.0.0.1:<port>`; probe it with HTTP requests to
+   confirm each finding; do not start, stop or build anything." and "Everything you need
+   is in this prompt; do not explore the repository beyond the files in the diff.", and
+   the ask for a `CONFORMS file:line` or `DEVIATES expected/actual` line per `[C-nn]` plus
+   findings on the builder's tests. Each prompt names its own container's port. One
+   review is a subagent of your agent tool on `claude-sonnet-5-5`; the other runs in the
+   background as
+   `codex exec -s workspace-write -c sandbox_workspace_write.network_access=true --skip-git-repo-check --ignore-user-config --disable multi_agent -m gpt-5.6-terra -c model_reasoning_effort=medium -C <dir> -o <file> "<prompt>" </dev/null`
+   with `<dir>` from `mktemp -d` and `<file>` from `mktemp`: it can reach the network
+   and write only in `<dir>` and the temp directory, never in the repository; without
+   `</dev/null` it waits for input. Launch each review once. Wait for both before step
+   4, at most 3 minutes each: a review still running then is stopped, and you go on with
+   the other and say so in the verdict. Stop both containers once both reviews are in.
 4. Merge the two reviews into one finding per `[C-nn]`: `CONFORMS` with `file:line`, or
    `DEVIATES` with expected against actual and the passage of the requirements. Confirm
    every `DEVIATES` from either review yourself, by running it or citing the code, before
