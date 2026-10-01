@@ -131,18 +131,19 @@ los cuatro archivos (comparar con `shasum`) y vuelve a pasar el gate de mandates
 
 ### Retro
 
-Después del resultado, el coordinator pide la retro a cada seat (paso 8) y cada uno contesta
-con líneas `LESSON`. Al cerrar:
+Después del resultado, el coordinator pide la retro a cada seat (paso 8). Cada uno contesta con
+líneas `LESSON`, y el coordinator revisa cada retro al llegar y edita él mismo `## Lessons` del
+mandate del seat (paso 9), con un registro `task=retro-apply` en el room. No commitea. Al cerrar,
+auditar:
 
-1. `python3 tools/retro.py $R/room.json`: lecciones por seat; `[flag: …]` marca términos del
-   despacho, rutas e identificadores, que no pueden entrar a un mandate.
-2. Mostrarle al usuario las propuestas con `AskUserQuestion` (en el `preview`), una pregunta por
-   seat. Nada se aplica sin su aprobación, y una con `flag` se reescribe genérica o se descarta.
-3. Las aprobadas van a `## Lessons` del mandate del seat, reemplazando `None yet.`. Tope de 8 por
-   seat: una que repite otra la reemplaza.
-4. Gate de mandates y `shasum` del bloque común (las lecciones quedan fuera de él).
-5. En `RUN-N.md`, una tabla con las lecciones aplicadas y, contra la corrida anterior con los
-   mismos requisitos, el `run time` y los REJECT que imprime el validador.
+1. `git -C ~/Documents/lights-out diff mandates/`: solo cambian líneas dentro de `## Lessons`.
+2. `python3 tools/retro.py $R/room.json`: ninguna lección aplicada lleva `[flag: …]`.
+3. Gate de mandates y `shasum` del bloque común.
+4. Si algo falla, revertir esa lección y anotarlo como hallazgo. En `RUN-N.md`, una tabla con
+   los registros `retro-apply` (aplicadas, fusionadas, descartadas) y, contra la corrida anterior
+   con los mismos requisitos, el `run time` y los REJECT que imprime el validador.
+5. El commit de `mandates/` lo hace el usuario cuando lo pide. En la corrida juzgada, los
+   `mandates/` entregados son los del despacho y las lecciones van en un commit posterior.
 
 ## Verificar
 
@@ -186,6 +187,7 @@ python3 tools/retro.py --self-check
 | `NEXT @[[<id>]]` en vez de `NEXT @<seat>` en el room | no es un error: es el token de mención de BAND (`band send` no tiene `--mention`); el validador lo acepta y el bloque común lo documenta |
 | El coordinator pone `stage=` en los pedidos a environment | el mandate trae las líneas literales (`STATE working task=env-prepare`, `task=env-check sha=…`) y el validador lo marca como problema |
 | El coordinator cierra la etapa mencionando a un seat y con `DONE` | el paso 6 trae la línea literal del cierre (seats sin `@`, `STATE completed stage=<N> …` y `DONE`); el resultado al humano y el `env-restore` de environment también tienen la suya |
+| `band room send` rechaza un mensaje sin mención ("message must include at least one @owner/handle mention") | los registros que terminan en `DONE` (cierre de etapa, estado inicial, retro) mencionan a `@coordinator`, o el coordinator al seat cuyo trabajo registra; el validador los reconoce con `record()` |
 | environment responde el chequeo final mencionando al coordinator pero termina en `DONE` | el mandate trae la línea literal `NEXT @coordinator`; el validador marca todo mensaje que menciona un seat y termina en `DONE` |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 

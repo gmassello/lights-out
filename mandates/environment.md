@@ -30,8 +30,8 @@ participants.
 
 1. When `@coordinator` asks for a ready environment, first record the starting state:
    whether the runtime answers, its containers, its images and the listeners on the ports
-   the requirements name. Post it in the room before you start or change anything, naming
-   no seat, ending with `STATE working task=env-prepare` and `DONE`. Then start the runtime
+   the requirements name. Post it in the room before you start or change anything,
+   mentioning only `@coordinator`, ending with `STATE working task=env-prepare` and `DONE`. Then start the runtime
    if it does not answer, wait in a loop until it does, up to 120 seconds, and answer
    `@coordinator` with each command and its output, ending with exactly
    `STATE completed task=env-prepare` (or `failed`) and `NEXT @coordinator`.
@@ -71,7 +71,7 @@ nothing from the run is left running, and the runtime is as you found it.
 
 Rules learned from earlier runs; follow them like the rest of this mandate.
 
-None yet.
+- Do not use shell tools that may not exist on the host, such as GNU `timeout` on macOS; use a plain polling loop instead.
 
 ## Rules for every seat
 
@@ -85,8 +85,8 @@ task id or "read the room" is not a handoff. Every handoff pastes the actual
 requirements; if they do not fit, send numbered parts and mark the last one `final`.
 Never cut requirements to make them fit.
 
-**A mention is a function call.** Mention a seat only when it has to act. Acks go
-without `@`. Name a seat without `@` when it does not have to act. After a handoff,
+**A mention is a function call.** Mention a seat only when it has to act, or when the
+send command needs one for a record (see Protocol line). Acks go without `@`. Name a seat without `@` when it does not have to act. After a handoff,
 stay silent: no "ready and waiting", no "standing by".
 
 **Post at once.** Post every message with the `send` command of the band CLI, which
@@ -134,6 +134,9 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+The send command rejects a message without a mention, so a record that ends with `DONE`
+(a stage close, a starting-state record, a retro) mentions `@coordinator`, or, when you
+are the coordinator, the seat whose work it records. That mention asks for no action.
 `@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
 when the send command needs it; both name the same seat.
 
@@ -150,5 +153,5 @@ on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEP
 Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
 rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
 command. The rule must hold for any requirements: no paths, field names, error codes
-or product words from them. Write `LESSON none` if there was no rework. Name no seat
-and end with `STATE completed task=retro` and `DONE`.
+or product words from them. Write `LESSON none` if there was no rework. End
+with `STATE completed task=retro` and `DONE`.

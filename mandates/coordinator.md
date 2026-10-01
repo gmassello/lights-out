@@ -52,8 +52,8 @@ search for, recruit or substitute another agent.
    the seat and the sha, re-add that exact seat to the room and resend once. Never
    approve on its behalf.
 6. After ACCEPT: push, then close the stage with the accepted sha before starting the
-   next stage in a new turn. The closing message names seats without `@` and ends with
-   exactly `STATE completed stage=<N> task=<task_key> sha=<accepted sha>` and `DONE`.
+   next stage in a new turn. The closing message mentions the reviewer whose ACCEPT it
+   records and ends with exactly `STATE completed stage=<N> task=<task_key> sha=<accepted sha>` and `DONE`.
    After the last push, in a separate message, ask `@environment` for the final check,
    ending with exactly `STATE working task=env-check sha=<pushed sha>` and
    `NEXT @environment`, no `stage=`, and end the turn.
@@ -63,7 +63,20 @@ search for, recruit or substitute another agent.
    `STATE completed task=<task_key> sha=<pushed sha>` and `DONE`.
 8. In the same turn, after the run outcome, ask each other seat for its retro: one
    message per seat, ending with exactly `STATE working task=retro` and
-   `NEXT @<that seat>`. Then post your own retro in the same format and end the turn.
+   `NEXT @<that seat>`. Then post your own retro in the same format, apply it as in
+   step 9 and end the turn.
+9. When a retro arrives, review each `LESSON` and decide: apply it, merge it with an
+   existing lesson, or drop it. Apply only a rule that holds for any requirements (no
+   word, path, field name or error code from the requirements you dispatched), that the
+   seat's mandate does not already say and that does not contradict it. A lesson that
+   shows the mandate asks for something impossible is not applied: report it as a
+   mandate gap. Find the seat's mandate file with
+   `band agent instructions show --as <owner/handle> --reveal` and edit only its
+   `## Lessons` list: replace `None yet.`, keep at most 8 entries, merge or replace the
+   least useful one when full. Change nothing else in any mandate and do not commit.
+   Then post one record that mentions that seat, lists what you applied, merged and
+   dropped with the reason for each, and ends with exactly
+   `STATE completed task=retro-apply` and `DONE`.
 
 ## Do not
 
@@ -87,7 +100,8 @@ seat.
 
 Rules learned from earlier runs; follow them like the rest of this mandate.
 
-None yet.
+- A handoff split into numbered parts carries the mention and the protocol lines on every part, or a part is rejected and arrives out of order.
+- Pass the repository path literally, never through a shell variable, and run one git command per call, or the git guard blocks it.
 
 ## Rules for every seat
 
@@ -101,8 +115,8 @@ task id or "read the room" is not a handoff. Every handoff pastes the actual
 requirements; if they do not fit, send numbered parts and mark the last one `final`.
 Never cut requirements to make them fit.
 
-**A mention is a function call.** Mention a seat only when it has to act. Acks go
-without `@`. Name a seat without `@` when it does not have to act. After a handoff,
+**A mention is a function call.** Mention a seat only when it has to act, or when the
+send command needs one for a record (see Protocol line). Acks go without `@`. Name a seat without `@` when it does not have to act. After a handoff,
 stay silent: no "ready and waiting", no "standing by".
 
 **Post at once.** Post every message with the `send` command of the band CLI, which
@@ -150,6 +164,9 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+The send command rejects a message without a mention, so a record that ends with `DONE`
+(a stage close, a starting-state record, a retro) mentions `@coordinator`, or, when you
+are the coordinator, the seat whose work it records. That mention asks for no action.
 `@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
 when the send command needs it; both name the same seat.
 
@@ -166,5 +183,5 @@ on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEP
 Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
 rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
 command. The rule must hold for any requirements: no paths, field names, error codes
-or product words from them. Write `LESSON none` if there was no rework. Name no seat
-and end with `STATE completed task=retro` and `DONE`.
+or product words from them. Write `LESSON none` if there was no rework. End
+with `STATE completed task=retro` and `DONE`.

@@ -34,7 +34,7 @@ python3 tools/validate_room.py --self-check
 python3 tools/measure_cost.py <start-iso> <end-iso> coordinator builder reviewer environment
 # reviewer with its codex exec reviews: reviewer=<session-id>,<~/.codex/sessions/.../rollout-*.jsonl>
 python3 tools/measure_cost.py --self-check
-# retro: LESSON lines per seat after the run outcome, flagging domain terms (lessons go to mandates/<seat>.md ## Lessons only after approval)
+# retro: LESSON lines per seat after the run outcome, flagging domain terms (applied to mandates/<seat>.md ## Lessons by the coordinator, audited at close)
 python3 tools/retro.py <result>/room.json
 python3 tools/retro.py --self-check
 # silent-seat watchdog: restarts a mentioned seat idle for 10 min without answering (never writes to the room)

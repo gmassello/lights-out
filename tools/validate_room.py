@@ -30,6 +30,12 @@ def protocol(content):
     return {"state": state.group(1), **dict(FIELD.findall(state.group(2))), "next": lines[-1]}
 
 
+def record(line, sender):
+    task, state = line.get("task", ""), line["state"]
+    return (task.startswith("retro") or (task == "env-prepare" and state == "working")
+            or (sender == "coordinator" and state == "completed" and bool(line.get("stage"))))
+
+
 def resolve(repo, sha):
     out = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}"],
                          capture_output=True, text=True)
@@ -42,7 +48,7 @@ def run_time(messages):
     texts = [m for m in messages if m.get("messageType") == "text"]
     human = next((m for m in texts if str(m.get("senderType", "")).lower() not in ("agent", "system")), None)
     work = [m for m in texts if str(m.get("senderType", "")).lower() == "agent"
-            and (protocol(m.get("content")) or {}).get("task") != "retro"]
+            and not (protocol(m.get("content")) or {}).get("task", "").startswith("retro")]
     if not human or not work or not all(m.get("insertedAt") for m in work + [human]):
         return None
     took = max(at(m) for m in work) - at(human)
@@ -77,7 +83,7 @@ def validate(room, repo):
         if line is None:
             problems.append(f"{where}: handoff or verdict without a valid protocol line")
             continue
-        if addresses and line["next"] == "DONE":
+        if addresses and line["next"] == "DONE" and not record(line, m.get("senderName")):
             problems.append(f"{where}: mentions a seat but ends with DONE")
         if line.get("task", "").startswith("env-") and line.get("stage"):
             problems.append(f"{where}: environment message with stage=")

@@ -103,7 +103,9 @@ run, ending with the protocol line.
 
 Rules learned from earlier runs; follow them like the rest of this mandate.
 
-None yet.
+- Brace every shell variable that precedes a colon (`${VAR}:path`), and verify that each generated review prompt contains the candidate sha before launching the review.
+- Write checks that assert behaviour both before and after a state change such as a reset, so one defect is caught from both sides.
+- Check the commit message against the standing rules before committing; an amend rewrites a sha you may already have announced.
 
 ## Rules for every seat
 
@@ -117,8 +119,8 @@ task id or "read the room" is not a handoff. Every handoff pastes the actual
 requirements; if they do not fit, send numbered parts and mark the last one `final`.
 Never cut requirements to make them fit.
 
-**A mention is a function call.** Mention a seat only when it has to act. Acks go
-without `@`. Name a seat without `@` when it does not have to act. After a handoff,
+**A mention is a function call.** Mention a seat only when it has to act, or when the
+send command needs one for a record (see Protocol line). Acks go without `@`. Name a seat without `@` when it does not have to act. After a handoff,
 stay silent: no "ready and waiting", no "standing by".
 
 **Post at once.** Post every message with the `send` command of the band CLI, which
@@ -166,6 +168,9 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+The send command rejects a message without a mention, so a record that ends with `DONE`
+(a stage close, a starting-state record, a retro) mentions `@coordinator`, or, when you
+are the coordinator, the seat whose work it records. That mention asks for no action.
 `@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
 when the send command needs it; both name the same seat.
 
@@ -182,5 +187,5 @@ on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEP
 Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
 rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
 command. The rule must hold for any requirements: no paths, field names, error codes
-or product words from them. Write `LESSON none` if there was no rework. Name no seat
-and end with `STATE completed task=retro` and `DONE`.
+or product words from them. Write `LESSON none` if there was no rework. End
+with `STATE completed task=retro` and `DONE`.

@@ -169,5 +169,31 @@ class ValidateRoom(unittest.TestCase):
         self.assertIn("run time 0:09:53 (dispatch to outcome)", out)
 
 
+    def test_records_may_mention_a_seat_and_end_with_done(self):
+        messages = [self.base[0],
+                    msg("e", "@[[c]] state found\nSTATE working task=env-prepare\nDONE")] + self.base[1:] + [
+            msg("coordinator", f"@[[r]] stage closed\nSTATE completed stage=1 task=t sha={self.good}\nDONE"),
+            msg("b", "@[[c]] LESSON Run every check first (evidence: #4)\nSTATE completed task=retro\nDONE")]
+        _, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+
+    def test_handoff_and_final_check_with_done_are_still_flagged(self):
+        messages = self.base[:5] + [msg("b", "@[[r]] " + line("completed", self.good, "DONE"))] + [
+            msg("e", f"@[[c]] clean\nSTATE completed task=env-check sha={self.good}\nDONE")]
+        _, problems = self.run_room(messages)
+        self.assertIn("message #5 from b: mentions a seat but ends with DONE", problems)
+        self.assertIn("message #6 from e: mentions a seat but ends with DONE", problems)
+
+
+    def test_retro_apply_record_is_valid_and_outside_run_time(self):
+        stamps = ["2026-10-01T10:00:00Z"] * 6 + ["2026-10-01T10:05:00Z"]
+        messages = [dict(m, insertedAt=t) for m, t in zip(self.base, stamps)]
+        messages.append(dict(msg("coordinator", "@[[b]] applied 2, dropped 1\nSTATE completed task=retro-apply\nDONE"),
+                             insertedAt="2026-10-01T10:20:00Z"))
+        out, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+        self.assertIn("run time 0:05:00 (dispatch to outcome)", out)
+
+
 if __name__ == "__main__":
     unittest.main()

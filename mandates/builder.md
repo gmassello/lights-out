@@ -63,7 +63,9 @@ A committed candidate handed to `@reviewer` with the protocol line, or a `refuse
 
 Rules learned from earlier runs; follow them like the rest of this mandate.
 
-None yet.
+- Never put a directory change in the same command as a commit; run every version-control write as its own command with the repository passed as an option.
+- Do not start work on a multi-part handoff until the part marked final and every earlier part have arrived; parts can arrive out of order when a send is rejected and resent.
+- When the requirements order a deliberate defect in the first candidate, list in the handoff the checks it will fail, so the rejection and the repair take a single round.
 
 ## Rules for every seat
 
@@ -77,8 +79,8 @@ task id or "read the room" is not a handoff. Every handoff pastes the actual
 requirements; if they do not fit, send numbered parts and mark the last one `final`.
 Never cut requirements to make them fit.
 
-**A mention is a function call.** Mention a seat only when it has to act. Acks go
-without `@`. Name a seat without `@` when it does not have to act. After a handoff,
+**A mention is a function call.** Mention a seat only when it has to act, or when the
+send command needs one for a record (see Protocol line). Acks go without `@`. Name a seat without `@` when it does not have to act. After a handoff,
 stay silent: no "ready and waiting", no "standing by".
 
 **Post at once.** Post every message with the `send` command of the band CLI, which
@@ -126,6 +128,9 @@ NEXT @<handle>
 The second line is `NEXT @<handle>` naming the one seat that acts next, or the single
 word `DONE` when no seat has to act. Never both, never `NEXT DONE`, never omitted. A
 message without this line mentions no one.
+The send command rejects a message without a mention, so a record that ends with `DONE`
+(a stage close, a starting-state record, a retro) mentions `@coordinator`, or, when you
+are the coordinator, the seat whose work it records. That mention asks for no action.
 `@<handle>` is written as the room's mention token for that seat (`@[[<agent-id>]]`)
 when the send command needs it; both name the same seat.
 
@@ -142,5 +147,5 @@ on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEP
 Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
 rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
 command. The rule must hold for any requirements: no paths, field names, error codes
-or product words from them. Write `LESSON none` if there was no rework. Name no seat
-and end with `STATE completed task=retro` and `DONE`.
+or product words from them. Write `LESSON none` if there was no rework. End
+with `STATE completed task=retro` and `DONE`.
