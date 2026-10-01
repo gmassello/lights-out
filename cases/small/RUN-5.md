@@ -33,7 +33,7 @@ Run time: 8 min 45 s. Human messages: 1.
 
 | Check | Command | Result |
 |---|---|---|
-| Room validator | `tools/validate_room.py room.json <repo>` | exit 1 at first (`stage 0: open`, below); after the validator amendment, exit 0: stages closed 1/1, rejections repaired 1/1, 1 human message, 0 problems |
+| Room validator | `tools/validate_room.py room.json <repo>` | exit 1 at first (`stage 0: open`, below); after the validator amendment, exit 0: stages closed 1/1, rejections repaired 1/1, 1 human message, 0 problems. Re-run with the validator at `a3c465b` (1 Oct): exit 1, 5 problems (environment message with stage=: #15, #245, #257; mentions a seat but ends with DONE: #38, #257), from rules added after this run; stages, verdicts and repairs unchanged |
 | Reject and repair (AE2) | room and `git log` | REJECT on `d91d7a6`, repair `105dc92` with parent `d91d7a6`, ACCEPT on `105dc92` |
 | Checks before code (AE1) | `git log` | `2691fc4` before the builder's first commit |
 | Restart (AE6) | `band restart --session lo-builder` | pid 91747 → 93383, presence live, resumed, no human message |

@@ -8,6 +8,8 @@ import time
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
+from validate_room import protocol_lines
+
 CLOSER = "coordinator"
 USAGE = ("usage: watchdog.py <room-id> --seats a,b,c [--wait 600] [--interval 30] [--dry-run [--now ISO]]"
          " | --self-check")
@@ -19,8 +21,7 @@ def when(text):
 
 
 def last_line(content):
-    lines = [l.strip() for l in str(content or "").splitlines() if l.strip()]
-    return lines[-1] if lines else ""
+    return (protocol_lines(content) or [""])[-1]
 
 
 def mentioned(m, seats):
@@ -44,7 +45,7 @@ def due(messages, now, wait, seats):
                   key=lambda m: m["inserted_at"])
     out = []
     for i, m in enumerate(msgs):
-        if m.get("message_type") != "text" or m.get("sender_name") not in seats:
+        if m.get("message_type") != "text":
             continue
         for seat in expected(m, seats):
             later = [x for x in msgs[i + 1:] if x.get("sender_name") == seat
@@ -81,6 +82,14 @@ def log(text):
     print(f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} {text}", flush=True)
 
 
+def restart(cmd):
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"failed: {exc}"
+    return f"exit={res.returncode}"
+
+
 def run(args):
     seats = set(args.seats.split(","))
     done = set()
@@ -102,8 +111,7 @@ def run(args):
             if args.dry_run:
                 log(f"due {seat} message {mid}: would run {' '.join(cmd)}")
                 continue
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            log(f"due {seat} message {mid}: ran {' '.join(cmd)} exit={res.returncode}")
+            log(f"due {seat} message {mid}: ran {' '.join(cmd)} {restart(cmd)}")
         if args.dry_run:
             return 0
         if finished(messages, seats):

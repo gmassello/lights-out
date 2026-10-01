@@ -23,7 +23,7 @@ Stage time: 5 min 22 s. Human messages: 1.
 
 | Check | Command | Result |
 |---|---|---|
-| Room validator | `tools/validate_room.py room.json <repo>` | exit 0: 1/1 stage closed by the reviewer on the builder's candidate, 1 human message, 0 problems |
+| Room validator | `tools/validate_room.py room.json <repo>` | exit 0: 1/1 stage closed by the reviewer on the builder's candidate, 1 human message, 0 problems. Re-run with the validator at `a3c465b` (1 Oct): exit 1, 1 problem (mentions a seat but ends with DONE: #132), from rules added after this run; stages, verdicts and repairs unchanged |
 | Checks before code (AE1) | room order and `git log` | checks `2a8fc9b` at 00:08:25, before the builder's first commit `4c6daf1` |
 | Small-case checks | `python3 cases/small/checks.py` against the built image | 9/9 |
 | Offline health | `docker run --network none`, `GET /health` inside | healthy after 6 s (limit 30 s) |

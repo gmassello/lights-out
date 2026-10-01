@@ -50,5 +50,12 @@
 | 5 | resuelto | `258bc3c` |
 | 6 | resuelto | `035e61f` |
 | 7 | resuelto | `a3c465b` |
-| 8 | resuelto: tests por texto en `unittest` (`d337bd8`), mutaciones de las cinco guardas verificadas | este cambio |
-| 9 a 16 | pendientes | — |
+| 8 | resuelto: tests por texto en `unittest` (`d337bd8`), mutaciones de las cinco guardas verificadas | `7921bab` |
+| 9 | resuelto: `restart()` loguea timeout y `OSError` y el watchdog sigue | este cambio |
+| 10 | resuelto: cada `RUN-*.md` y `PLAN.md` suman la re-corrida con el validador en `a3c465b`, sin pisar el resultado del día | este cambio |
+| 11 | resuelto: líneas literales en el cierre de etapa y el resultado del coordinator y en `env-restore` de environment | este cambio |
+| 12 | resuelto: `protocol_lines()` en el validador, usada por `protocol()`, la regla de DONE (vía `next`) y el `last_line` del watchdog | este cambio |
+| 13 | resuelto: `due()` vigila también los mensajes del humano; el despacho cae en `mentioned()` | este cambio |
+| 14 | resuelto: timeout de 10 s y `wait_healthy()` sondea `/health` hasta 30 s antes del primer check | este cambio |
+| 15 | resuelto: `check_create` acepta el título recortado o el original; el spec no cambia | este cambio |
+| 16 | resuelto: `measure_cost` lee cada transcript una vez, tiny reusa `check_health` del chico, y el validador da exit 2 con un repo que no es git | este cambio |

@@ -57,7 +57,7 @@ findings), so this measures a weaker configuration than intended.
 
 | Check | Command | Result |
 |---|---|---|
-| Room validator | `tools/validate_room.py room.json <repo>` | exit 0: stages closed 1/1, rejections repaired 1/1, 1 human message, 0 problems |
+| Room validator | `tools/validate_room.py room.json <repo>` | exit 0: stages closed 1/1, rejections repaired 1/1, 1 human message, 0 problems. Re-run with the validator at `a3c465b` (1 Oct): exit 1, 3 problems (environment message with stage=: #15, #239; mentions a seat but ends with DONE: #251), from rules added after this run; stages, verdicts and repairs unchanged |
 | Restart (AE6) | `band restart --session lo-builder` | pid 29984, presence live, resumed |
 | Watchdog | `tiny-run-3.watchdog.log` | no restart needed; exited on the outcome |
 | Tiny-case checks | `python3 cases/tiny/checks.py` against the built image | 5/5 |

@@ -87,7 +87,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R2, R3, R5 · F1, F2, F3
 - **Files:** `cases/small/` (run notes), a throwaway delivery repo
 - **Depends on:** U2, U3, U4, U5
-- **Status:** done (29 sep) — run 5 (`cases/small/RUN-5.md`) with four seats: validator exit 0 (stage closed by the reviewer, REJECT on the seeded fault repaired 1/1, one human message), checks before code (AE1), builder restart recovered (AE6), watchdog with no restart needed, environment seat restored the runtime as found, outcome reported to the human, 9/9, cost equal to `band usage`. Runs 1–4 (`cases/small/RUN-1.md` … `RUN-4.md`) found the protocol, shared-runtime, lost-reply and wrong-dispatch defects that the amendments fixed.
+- **Status:** done (29 sep) — run 5 (`cases/small/RUN-5.md`) with four seats: validator exit 0 with the validator of that day (stage closed by the reviewer, REJECT on the seeded fault repaired 1/1, one human message; at `a3c465b` it reports 5 protocol problems from later rules), checks before code (AE1), builder restart recovered (AE6), watchdog with no restart needed, environment seat restored the runtime as found, outcome reported to the human, 9/9, cost equal to `band usage`. Runs 1–4 (`cases/small/RUN-1.md` … `RUN-4.md`) found the protocol, shared-runtime, lost-reply and wrong-dispatch defects that the amendments fixed.
 - **Tests:**
   - happy: the delivered service against the small-case checks → 100%, and the validator → exits 0. Covers AE1.
   - edge: no rejection happens on its own → one fault is injected in this practice run and the REJECT and repair appear in the room.

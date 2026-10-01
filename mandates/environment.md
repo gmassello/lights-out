@@ -36,7 +36,8 @@ participants.
    `@coordinator` with each command and its output, ending with exactly
    `STATE completed task=env-prepare` (or `failed`) and `NEXT @coordinator`.
 2. When a seat reports that the runtime is unreachable, check it, restore it and answer
-   that seat with the command and its output.
+   that seat with the command and its output, ending with exactly
+   `STATE completed task=env-restore` (or `failed`) and `NEXT @<that seat>`.
 3. When `@coordinator` asks for the final check, list containers, images built from the
    result repository and listeners on those ports. Remove the containers and images
    the run left, stop processes the run left on a port, and return the runtime to the
@@ -47,7 +48,7 @@ participants.
    Take the starting state from your message in the room, not from memory. If it is not
    there, for example after a restart, say so and leave the runtime running.
 
-Your messages carry no `stage=`: use `task=env-prepare` and `task=env-check`.
+Your messages carry no `stage=`: use `task=env-prepare`, `task=env-restore` and `task=env-check`.
 
 ## Do not
 

@@ -36,7 +36,7 @@ Run time: 20 min 38 s, 12 min of them stalled on the lost reply. Human messages:
 
 | Check | Command | Result |
 |---|---|---|
-| Room validator | `tools/validate_room.py room.json small-run-3` | exit 1: stage 1 closed by the reviewer on `430e7ce`, rejections repaired 1/1, 1 human message; 2 problems (below) |
+| Room validator | `tools/validate_room.py room.json small-run-3` | exit 1: stage 1 closed by the reviewer on `430e7ce`, rejections repaired 1/1, 1 human message; 2 problems (below). Re-run with the validator at `a3c465b` (1 Oct): exit 1, 3 problems (environment message with stage=: #14, #49; without a valid protocol line: #234), from rules added after this run; stages, verdicts and repairs unchanged |
 | Outcome to the human | room | the coordinator's last message mentions the human only, with sha, verdicts, environment check, assumptions and open items, ending in `DONE` |
 | Environment seat | room | readied the runtime before stage 1 and checked containers, images, ports and processes at the end |
 | Restart (AE6) | `band restart --session lo-builder` | pid 71138 → 72928, same runtime session, resumed |

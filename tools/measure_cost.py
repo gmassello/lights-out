@@ -87,7 +87,7 @@ def read(paths):
             key = message.get("id") or f"{path}:{entry.get('uuid')}"
             if key not in seen:
                 seen[key] = (when(entry["timestamp"]), usage if isinstance(usage, dict) else {})
-    return list(seen.values()), has_usage
+    return seen, has_usage
 
 
 def totals(items, start=None, end=None):
@@ -116,9 +116,13 @@ def measure(start, end, seats):
         name, _, source = spec.partition("=")
         band = None if source else band_sessions(name)
         ids = source.split(",") if source else [s["sessionId"] for s in band]
-        paths = [p for sid in ids for p in transcripts(sid)]
-        items, has_usage = read(paths)
-        sums, active = totals(items, start, end)
+        reads = {sid: read(transcripts(sid)) for sid in ids}
+        merged = {}
+        for seen, _ in reads.values():
+            for key, item in seen.items():
+                merged.setdefault(key, item)
+        has_usage = any(h for _, h in reads.values())
+        sums, active = totals(merged.values(), start, end)
         for k in grand:
             grand[k] += sums[k]
         flag = "" if has_usage else " partial"
@@ -129,7 +133,7 @@ def measure(start, end, seats):
                   f" pass {name}=<session-id>", file=sys.stderr)
         rows.append(f"{name}: {fmt(sums)} active={active or '0:00:00'}{flag}")
         for session in band or []:
-            whole, _ = totals(read(transcripts(session["sessionId"]))[0])
+            whole, _ = totals(reads[session["sessionId"]][0].values())
             theirs = {n: int(session.get(b) or 0) for n, _, b in FIELDS}
             verdict = "match" if whole == theirs else "mismatch"
             checks.append(f"band {name} {session['sessionId']}: {verdict}"

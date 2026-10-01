@@ -52,12 +52,15 @@ search for, recruit or substitute another agent.
    the seat and the sha, re-add that exact seat to the room and resend once. Never
    approve on its behalf.
 6. After ACCEPT: push, then close the stage with the accepted sha before starting the
-   next stage in a new turn. After the last push, ask `@environment` for the final check,
+   next stage in a new turn. The closing message names seats without `@` and ends with
+   exactly `STATE completed stage=<N> task=<task_key> sha=<accepted sha>` and `DONE`.
+   After the last push, in a separate message, ask `@environment` for the final check,
    ending with exactly `STATE working task=env-check sha=<pushed sha>` and
    `NEXT @environment`, no `stage=`, and end the turn.
 7. When `@environment` answers the final check, send the run outcome: one message that
    mentions the human who dispatched the run and no seat, with the pushed sha, the
-   verdicts, the environment check and anything left open, ending with `DONE`.
+   verdicts, the environment check and anything left open, ending with exactly
+   `STATE completed task=<task_key> sha=<pushed sha>` and `DONE`.
 
 ## Do not
 

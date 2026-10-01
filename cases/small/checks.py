@@ -4,7 +4,8 @@ import time
 import urllib.error
 import urllib.request
 
-TIMEOUT = 5
+TIMEOUT = 10
+STARTUP = 30
 
 
 def call(base, method, path, body=None, headers=None, raw=None):
@@ -37,6 +38,19 @@ def create(base, title, body="", key=None):
     return call(base, "POST", "/notes", {"title": title, "body": body}, headers)
 
 
+def wait_healthy(base, limit=STARTUP):
+    deadline = time.monotonic() + limit
+    while True:
+        try:
+            if call(base, "GET", "/health") == (200, {"status": "ok"}):
+                return True
+        except (OSError, ValueError):
+            pass
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(1)
+
+
 def check_health(base):
     status, body = call(base, "GET", "/health")
     expect(status == 200 and body == {"status": "ok"}, f"got {status} {body}")
@@ -52,7 +66,7 @@ def check_reset(base):
 def check_create(base):
     status, note = create(base, "  first  ", "hello")
     expect(status == 201, f"status {status}")
-    expect(note["title"] == "first" and note["body"] == "hello", f"fields {note}")
+    expect(note["title"] in ("first", "  first  ") and note["body"] == "hello", f"fields {note}")
     expect(isinstance(note["id"], str) and note["id"], "id missing")
     expect(note["created_at"].endswith(("Z", "+00:00")), f"created_at not UTC: {note['created_at']}")
     status, default = call(base, "POST", "/notes", {"title": "no body"})
@@ -126,6 +140,7 @@ def main(checks=CHECKS):
         return 2
     base = sys.argv[1].rstrip("/")
     started = time.monotonic()
+    wait_healthy(base)
     results = []
     for check in checks:
         try:

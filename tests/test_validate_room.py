@@ -1,8 +1,10 @@
+import json
 import subprocess
 import tempfile
+from pathlib import Path
 import unittest
 
-from validate_room import validate
+from validate_room import main, validate
 
 
 def msg(sender, text, kind="agent"):
@@ -83,6 +85,11 @@ class ValidateRoom(unittest.TestCase):
         self.assertIn("stages closed 1/1", out[0])
         self.assertIn("rejections repaired 1/1", out[0])
 
+    def test_mention_with_done_before_a_fence(self):
+        messages = self.base[:-1] + [msg("r", "@[[c]] " + line("ACCEPT", self.good, "DONE") + "\n```")]
+        _, problems = self.run_room(messages)
+        self.assertEqual(problems, ["message #6 from r: mentions a seat but ends with DONE"])
+
     def test_done_without_mention(self):
         messages = self.base + [msg("e", "state recorded\nSTATE working task=env-prepare\nDONE")]
         _, problems = self.run_room(messages)
@@ -136,6 +143,13 @@ class ValidateRoom(unittest.TestCase):
         self.assertEqual(problems, [])
         self.assertIn("rejections repaired 1/1", out[0])
 
+
+    def test_repo_that_is_not_git_is_a_usage_error(self):
+        with tempfile.TemporaryDirectory() as other:
+            room = Path(other) / "room.json"
+            room.write_text(json.dumps({"messages": self.base}))
+            self.assertEqual(main([str(room), other]), 2)
+            self.assertEqual(main([str(room), self.tmp.name]), 0)
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,15 +14,19 @@ NEXT_LINE = re.compile(r"^(NEXT @\S+|DONE)$")
 USAGE = "usage: validate_room.py <room.json> <repo> | --self-check"
 
 
-def protocol(content):
+def protocol_lines(content):
     lines = [l.strip() for l in str(content or "").splitlines()]
-    lines = [l for l in lines if l and not l.startswith("```")]
+    return [l for l in lines if l and not l.startswith("```")]
+
+
+def protocol(content):
+    lines = protocol_lines(content)
     if len(lines) < 2:
         return None
     state, nxt = STATE_LINE.match(lines[-2]), NEXT_LINE.match(lines[-1])
     if not state or not nxt or state.group(1) not in STATES | VERDICTS | REPLIES:
         return None
-    return {"state": state.group(1), **dict(FIELD.findall(state.group(2)))}
+    return {"state": state.group(1), **dict(FIELD.findall(state.group(2))), "next": lines[-1]}
 
 
 def resolve(repo, sha):
@@ -59,7 +63,7 @@ def validate(room, repo):
         if line is None:
             problems.append(f"{where}: handoff or verdict without a valid protocol line")
             continue
-        if addresses and content.strip().splitlines()[-1].strip() == "DONE":
+        if addresses and line["next"] == "DONE":
             problems.append(f"{where}: mentions a seat but ends with DONE")
         if line.get("task", "").startswith("env-") and line.get("stage"):
             problems.append(f"{where}: environment message with stage=")
@@ -132,6 +136,9 @@ def main(argv):
         return 0 if self_check() else 1
     if len(argv) != 2:
         print(USAGE, file=sys.stderr)
+        return 2
+    if subprocess.run(["git", "-C", argv[1], "rev-parse", "--git-dir"], capture_output=True).returncode != 0:
+        print(f"validate_room: {argv[1]} is not a git repository", file=sys.stderr)
         return 2
     try:
         room = json.loads(Path(argv[0]).read_text())

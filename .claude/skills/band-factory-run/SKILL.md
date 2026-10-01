@@ -169,6 +169,7 @@ python3 tools/measure_cost.py --self-check
 | La cantidad de checks salta entre corridas del mismo spec (tiny: 16 y 26) | contar `[R-nn]` contra `[C-nn]` en el mensaje de checks del reviewer: mismo número y la línea `requirements: N, checks: N` |
 | `NEXT @[[<id>]]` en vez de `NEXT @<seat>` en el room | no es un error: es el token de mención de BAND (`band send` no tiene `--mention`); el validador lo acepta y el bloque común lo documenta |
 | El coordinator pone `stage=` en los pedidos a environment | el mandate trae las líneas literales (`STATE working task=env-prepare`, `task=env-check sha=…`) y el validador lo marca como problema |
+| El coordinator cierra la etapa mencionando a un seat y con `DONE` | el paso 6 trae la línea literal del cierre (seats sin `@`, `STATE completed stage=<N> …` y `DONE`); el resultado al humano y el `env-restore` de environment también tienen la suya |
 | environment responde el chequeo final mencionando al coordinator pero termina en `DONE` | el mandate trae la línea literal `NEXT @coordinator`; el validador marca todo mensaje que menciona un seat y termina en `DONE` |
 | Un seat apaga el runtime de contenedores compartido y otro se queda sin daemon | `@environment` es su dueño; los demás se lo piden (regla del bloque común) |
 

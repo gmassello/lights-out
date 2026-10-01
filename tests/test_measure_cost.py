@@ -67,6 +67,17 @@ class MeasureCost(unittest.TestCase):
         self.assertTrue(out[1].endswith("partial: no band session in the window"), out)
         self.assertTrue(out[0].endswith("partial"), out)
 
+    def test_band_seat_reads_each_transcript_once(self):
+        path = self.write("live", [line("l1", "2026-09-28T10:05:00Z")])
+        session = {"sessionId": str(path), "inputTokens": 1, "outputTokens": 10,
+                   "cacheReadTokens": 100, "cacheCreationTokens": 5}
+        with mock.patch.object(measure_cost, "band_sessions", lambda seat: [session]), \
+                mock.patch.object(measure_cost, "read", wraps=measure_cost.read) as read:
+            out = measure(START, END, ["reviewer"])
+        self.assertEqual(read.call_count, 1)
+        self.assertIn("reviewer: input=1 output=10 cache_read=100 cache_creation=5", out[1])
+        self.assertIn(": match", out[2])
+
     def test_exit_codes(self):
         path = self.write("coordinator", [line("c1", "2026-09-28T10:05:00Z")])
         self.assertEqual(main([START, END, f"coordinator={path}"]), 0)

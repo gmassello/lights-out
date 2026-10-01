@@ -6,15 +6,11 @@ _spec = importlib.util.spec_from_file_location("small_checks", Path(__file__).pa
 small = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(small)
 call, expect, expect_error = small.call, small.expect, small.expect_error
+check_health = small.check_health
 
 
 def create(base, title):
     return call(base, "POST", "/notes", {"title": title})
-
-
-def check_health(base):
-    status, body = call(base, "GET", "/health")
-    expect(status == 200 and body == {"status": "ok"}, f"got {status} {body}")
 
 
 def check_reset(base):

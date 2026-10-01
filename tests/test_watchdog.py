@@ -1,7 +1,9 @@
+import subprocess
 import unittest
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 
-from watchdog import due, finished
+from watchdog import due, finished, restart
 
 SEATS = {"coordinator", "builder", "environment"}
 T0 = datetime(2026, 9, 29, 22, 0, tzinfo=timezone.utc)
@@ -43,10 +45,23 @@ class Due(unittest.TestCase):
         closing = msg("d", 0, "environment", to=["coordinator"], content="clean\nSTATE completed\nDONE")
         self.assertEqual(due([closing], AT, 600, SEATS), [])
 
+    def test_done_before_a_fence_is_not_due(self):
+        closing = msg("f", 0, "environment", to=["coordinator"], content="clean\nSTATE completed\nDONE\n```")
+        self.assertEqual(due([closing], AT, 600, SEATS), [])
+
     def test_plain_next_handle_is_due(self):
         handoff = msg("p", 0, "coordinator", to=["builder", "environment"],
                       content="go\nSTATE working stage=1\nNEXT @gmassello/builder")
         self.assertEqual(due([handoff], AT, 600, SEATS), [("builder", "p")])
+
+    def test_human_dispatch_is_due(self):
+        dispatch = msg("h", 0, "Germán", to=["coordinator"], content="brief\nResult repository: /r")
+        self.assertEqual(due([dispatch], AT, 600, SEATS), [("coordinator", "h")])
+
+    def test_answered_dispatch_is_not_due(self):
+        dispatch = msg("h", 0, "Germán", to=["coordinator"], content="brief")
+        reply = msg("r", 30, "coordinator", to=["environment"])
+        self.assertNotIn(("coordinator", "h"), due([dispatch, reply], AT, 600, SEATS))
 
     def test_reply_after_now_is_ignored(self):
         late = msg("late", 800, "environment", to=["coordinator"])
@@ -72,6 +87,22 @@ class Finished(unittest.TestCase):
     def test_other_seat_done_to_human_does_not_finish(self):
         other = msg("b", 5, "builder", to=["Germán"], content="x\nSTATE x\nDONE")
         self.assertFalse(finished([other], SEATS))
+
+
+class Restart(unittest.TestCase):
+    CMD = ["band", "restart", "--session", "lo-builder"]
+
+    def test_exit_code_is_reported(self):
+        with mock.patch("watchdog.subprocess.run", return_value=subprocess.CompletedProcess(self.CMD, 0)):
+            self.assertEqual(restart(self.CMD), "exit=0")
+
+    def test_timeout_is_reported(self):
+        with mock.patch("watchdog.subprocess.run", side_effect=subprocess.TimeoutExpired(self.CMD, 120)):
+            self.assertTrue(restart(self.CMD).startswith("failed:"))
+
+    def test_missing_band_is_reported(self):
+        with mock.patch("watchdog.subprocess.run", side_effect=FileNotFoundError("band")):
+            self.assertTrue(restart(self.CMD).startswith("failed:"))
 
 
 if __name__ == "__main__":
