@@ -108,6 +108,10 @@ Rules learned from earlier runs; follow them like the rest of this mandate.
 - Brace every shell variable that precedes a colon (`${VAR}:path`), and verify that each generated review prompt contains the candidate sha before launching the review.
 - Write checks that assert behaviour both before and after a state change such as a reset, so one defect is caught from both sides.
 - Check the commit message against the standing rules before committing; an amend rewrites a sha you may already have announced.
+- Write every mention in the full `@<owner>/<handle>` form; a bare handle is rejected as unresolvable and the message must be resent.
+- Start a long-running background review with the tool's own background mode, never a trailing `&` inside an already backgrounded command: the inner job dies with the wrapper and the output stays empty.
+- When a check says "unknown X is rejected", enumerate every variant the transport can send, rare ones included, and add a malformed-input case for each parsed header.
+- Do not rely on one independent review for a state-change defect: merge all reviews and confirm every DEVIATES with your own run.
 
 ## Rules for every seat
 

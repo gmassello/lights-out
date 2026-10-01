@@ -66,6 +66,7 @@ Rules learned from earlier runs; follow them like the rest of this mandate.
 - Never put a directory change in the same command as a commit; run every version-control write as its own command with the repository passed as an option.
 - Do not start work on a multi-part handoff until the part marked final and every earlier part have arrived; parts can arrive out of order when a send is rejected and resent.
 - When the requirements order a deliberate defect in the first candidate, list in the handoff the checks it will fail, so the rejection and the repair take a single round.
+- Route every request the framework can receive, including unlisted methods and malformed headers, through the same handler and error format; never rely on the framework's default error pages.
 
 ## Rules for every seat
 

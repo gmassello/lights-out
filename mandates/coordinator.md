@@ -103,6 +103,7 @@ Rules learned from earlier runs; follow them like the rest of this mandate.
 
 - A handoff split into numbered parts carries the mention and the protocol lines on every part, or a part is rejected and arrives out of order.
 - Pass the repository path literally, never through a shell variable, and run one git command per call, or the git guard blocks it.
+- Write every mention in the room's full `@<owner>/<handle>` form (as listed by `chat participants`) from the first send; a bare `@<handle>` is not resolved and the send is rejected.
 
 ## Rules for every seat
 
