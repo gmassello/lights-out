@@ -63,7 +63,7 @@ delivery repo created for the judged run (U11). Nothing in `stage-N/` is written
 - **Covers:** R3, R5, R7, R9
 - **Files:** `tools/validate_room.py`
 - **Depends on:** U2
-- **Status:** done (28 sep) — `tools/validate_room.py`, stdlib only; `--self-check` builds a git repo and synthetic rooms and covers the happy path with a repaired REJECT, a self-accepted stage (reported open), a missing sha (named by message) and two human messages; a mutation that ignores the author makes it fail. Room fields follow `harness/check.py`; the human `senderType` value and the happy test on the small-case recording are confirmed in U6 (the tool prints the sender types it sees).
+- **Status:** done (28 sep) — `tools/validate_room.py`, stdlib only (tests moved to unittest on 30 sep). `tests/test_validate_room.py` builds a git repo and synthetic rooms; each test asserts the problem text, not a count, and `--self-check` runs it. It covers the happy path with a repaired REJECT, a self-accepted stage (reported open), a missing sha (named by message), two human messages, short and full shas of one commit, the builder's reply vocabulary and the environment and `DONE` rules. Removing any guard (author, commit resolution, environment `stage=`, mention with `DONE`, author's reply as verdict) makes its test fail; checked by mutation on 30 sep. Room fields follow `harness/check.py`; the human `senderType` value and the happy test on the small-case recording are confirmed in U6 (the tool prints the sender types it sees).
 - **Tests:**
   - happy: the small-case recording → exits 0 and prints stages, verdicts and repairs first. Covers AE2.
   - edge: a stage whose only ACCEPT comes from the candidate's author → reported as open. Covers AE3.

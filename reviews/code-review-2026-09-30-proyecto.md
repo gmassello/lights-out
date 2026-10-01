@@ -41,4 +41,14 @@
 
 ## Estado
 
-Sin aplicar. Sigue sin commitear el diff de la review anterior (environment `NEXT @coordinator` y la regla "mention + DONE").
+| Hallazgo | Estado | Commit |
+|---|---|---|
+| 1 | resuelto | `d337bd8` |
+| 2 | resuelto | `d337bd8` |
+| 3 | resuelto | `d337bd8` |
+| 4 | resuelto | `d337bd8` |
+| 5 | resuelto | `258bc3c` |
+| 6 | resuelto | `035e61f` |
+| 7 | resuelto | `a3c465b` |
+| 8 | resuelto: tests por texto en `unittest` (`d337bd8`), mutaciones de las cinco guardas verificadas | este cambio |
+| 9 a 16 | pendientes | — |
