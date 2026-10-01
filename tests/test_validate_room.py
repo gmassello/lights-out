@@ -151,5 +151,23 @@ class ValidateRoom(unittest.TestCase):
             self.assertEqual(main([str(room), other]), 2)
             self.assertEqual(main([str(room), self.tmp.name]), 0)
 
+    def test_retro_after_outcome_is_valid(self):
+        messages = self.base + [
+            msg("c", "@[[b]] retro please\nSTATE working task=retro\nNEXT @[[b]]"),
+            msg("b", "LESSON Run every check first (evidence: #4)\nSTATE completed task=retro\nDONE")]
+        _, problems = self.run_room(messages)
+        self.assertEqual(problems, [])
+
+    def test_run_time_excludes_the_retro(self):
+        stamps = ["2026-10-01T10:00:00Z", "2026-10-01T10:01:00Z", "2026-10-01T10:02:00Z",
+                  "2026-10-01T10:03:00Z", "2026-10-01T10:04:00Z", "2026-10-01T10:05:00Z",
+                  "2026-10-01T10:09:53.250Z"]
+        messages = [dict(m, insertedAt=t) for m, t in zip(self.base, stamps)]
+        messages.append(dict(msg("c", "@[[b]] retro please\nSTATE working task=retro\nNEXT @[[b]]"),
+                             insertedAt="2026-10-01T10:15:00Z"))
+        out, _ = self.run_room(messages)
+        self.assertIn("run time 0:09:53 (dispatch to outcome)", out)
+
+
 if __name__ == "__main__":
     unittest.main()

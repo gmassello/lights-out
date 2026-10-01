@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 STATES = {"working", "input-required", "completed", "failed", "refused"}
@@ -33,6 +34,19 @@ def resolve(repo, sha):
     out = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}"],
                          capture_output=True, text=True)
     return out.stdout.strip() if out.returncode == 0 else None
+
+
+def run_time(messages):
+    def at(m):
+        return datetime.fromisoformat(str(m["insertedAt"]).replace("Z", "+00:00"))
+    texts = [m for m in messages if m.get("messageType") == "text"]
+    human = next((m for m in texts if str(m.get("senderType", "")).lower() not in ("agent", "system")), None)
+    work = [m for m in texts if str(m.get("senderType", "")).lower() == "agent"
+            and (protocol(m.get("content")) or {}).get("task") != "retro"]
+    if not human or not work or not all(m.get("insertedAt") for m in work + [human]):
+        return None
+    took = max(at(m) for m in work) - at(human)
+    return took - timedelta(microseconds=took.microseconds)
 
 
 def validate(room, repo):
@@ -115,6 +129,9 @@ def validate(room, repo):
         else:
             problems.append(f"message #{i} from {who}: REJECT {line['sha']} has no repair")
 
+    timing = run_time(messages)
+    if timing:
+        details.append(f"run time {timing} (dispatch to outcome)")
     if humans != 1:
         problems.append(f"{humans} human messages; the run allows exactly one")
     details.append(f"sender types seen: {', '.join(sorted(sender_types))}")

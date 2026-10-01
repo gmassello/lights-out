@@ -129,12 +129,28 @@ hallazgos del validador con su enmienda, formatos y gotchas. Actualizar el estad
 `docs/PLAN.md`. Una enmienda de mandates mantiene idéntico el bloque `## Rules for every seat` en
 los cuatro archivos (comparar con `shasum`) y vuelve a pasar el gate de mandates.
 
+### Retro
+
+Después del resultado, el coordinator pide la retro a cada seat (paso 8) y cada uno contesta
+con líneas `LESSON`. Al cerrar:
+
+1. `python3 tools/retro.py $R/room.json`: lecciones por seat; `[flag: …]` marca términos del
+   despacho, rutas e identificadores, que no pueden entrar a un mandate.
+2. Mostrarle al usuario las propuestas con `AskUserQuestion` (en el `preview`), una pregunta por
+   seat. Nada se aplica sin su aprobación, y una con `flag` se reescribe genérica o se descarta.
+3. Las aprobadas van a `## Lessons` del mandate del seat, reemplazando `None yet.`. Tope de 8 por
+   seat: una que repite otra la reemplaza.
+4. Gate de mandates y `shasum` del bloque común (las lecciones quedan fuera de él).
+5. En `RUN-N.md`, una tabla con las lecciones aplicadas y, contra la corrida anterior con los
+   mismos requisitos, el `run time` y los REJECT que imprime el validador.
+
 ## Verificar
 
 ```bash
 band list                                                    # cuatro seats running=true
 python3 tools/validate_room.py --self-check
 python3 tools/measure_cost.py --self-check
+python3 tools/retro.py --self-check
 ```
 
 ## Gotchas

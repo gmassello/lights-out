@@ -67,6 +67,12 @@ A runtime that does not start within the limit is a blocker: answer `failed` to
 Each request answered once with the commands and their output, and after the final check
 nothing from the run is left running, and the runtime is as you found it.
 
+## Lessons
+
+Rules learned from earlier runs; follow them like the rest of this mandate.
+
+None yet.
+
 ## Rules for every seat
 
 **No human input.** The human's dispatch is the only human input for the whole run.
@@ -139,3 +145,10 @@ is invalid or outside your role: `STATE refused code=MISSING_FIELD details=[<fie
 `<verdict>` on a candidate is one of `ACCEPT`, `REJECT`, `INSUFFICIENT_EVIDENCE`. A finding
 on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEPT`,
 `DISPUTE` or `CLARIFY` with its `[C-nn]`. No other verdict words are used.
+
+**Retro.** When `@coordinator` asks for the retro after the run outcome, answer once.
+Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
+rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
+command. The rule must hold for any requirements: no paths, field names, error codes
+or product words from them. Write `LESSON none` if there was no rework. Name no seat
+and end with `STATE completed task=retro` and `DONE`.

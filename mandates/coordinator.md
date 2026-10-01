@@ -61,6 +61,9 @@ search for, recruit or substitute another agent.
    mentions the human who dispatched the run and no seat, with the pushed sha, the
    verdicts, the environment check and anything left open, ending with exactly
    `STATE completed task=<task_key> sha=<pushed sha>` and `DONE`.
+8. In the same turn, after the run outcome, ask each other seat for its retro: one
+   message per seat, ending with exactly `STATE working task=retro` and
+   `NEXT @<that seat>`. Then post your own retro in the same format and end the turn.
 
 ## Do not
 
@@ -79,6 +82,12 @@ recorded as the stage outcome, with the evidence gathered, and the run stops the
 The stage has an ACCEPT from `@reviewer` on a sha, that sha is pushed, and your closing
 message names it. After the last stage, the run outcome has gone to the human, not to a
 seat.
+
+## Lessons
+
+Rules learned from earlier runs; follow them like the rest of this mandate.
+
+None yet.
 
 ## Rules for every seat
 
@@ -152,3 +161,10 @@ is invalid or outside your role: `STATE refused code=MISSING_FIELD details=[<fie
 `<verdict>` on a candidate is one of `ACCEPT`, `REJECT`, `INSUFFICIENT_EVIDENCE`. A finding
 on a `[C-nn]` is `CONFORMS` or `DEVIATES`, and the answer to a finding is `ACCEPT`,
 `DISPUTE` or `CLARIFY` with its `[C-nn]`. No other verdict words are used.
+
+**Retro.** When `@coordinator` asks for the retro after the run outcome, answer once.
+Write one line `LESSON <rule> (evidence: <message, sha or [C-nn]>)` for each piece of
+rework you caused or saw: a REJECT, a refusal, a resend, a failed check, a blocked
+command. The rule must hold for any requirements: no paths, field names, error codes
+or product words from them. Write `LESSON none` if there was no rework. Name no seat
+and end with `STATE completed task=retro` and `DONE`.
