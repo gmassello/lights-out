@@ -123,6 +123,11 @@ def validate(room, repo):
             details.append(f"stage {stage}: open")
             problems.append(f"stage {stage}: open, no ACCEPT from a seat other than the author")
 
+    accepted = {e[3]["sha"] for e in parsed if valid_accept(e, e[3].get("stage"))}
+    for i, sender, who, line in parsed:
+        if line.get("task") == "env-check" and line.get("sha") and line["sha"] not in accepted:
+            problems.append(f"message #{i} from {who}: sha {line['sha']} of task=env-check is not an accepted sha")
+
     rejects = [e for e in verdicts if e[3]["state"] == "REJECT"]
     repaired = 0
     for i, sender, who, line in rejects:

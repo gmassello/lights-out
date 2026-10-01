@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from retro import lessons, main, report
+from retro import lessons, main, report, suspects
 
 
 def msg(sender, text, kind="agent"):
@@ -37,6 +37,12 @@ class Retro(unittest.TestCase):
         self.assertNotIn("[flag:", generic)
         self.assertTrue(any("item_count" in l and "[flag: item_count]" in l for l in out), out)
         self.assertTrue(any("/items" in l and "[flag:" in l and "MISSING_FIELD" in l.split("[flag:")[1] for l in out), out)
+
+    def test_fenced_dispatch_does_not_pair_spans_across_text(self):
+        dispatch = "```\nx\n```\nCall `GET /items` with a `key`."
+        self.assertEqual(suspects("LESSON Pass the token with a body file (evidence: #3)", dispatch), [])
+        self.assertEqual(suspects("LESSON Always send `key` (evidence: #3)", dispatch), ["key"])
+        self.assertEqual(suspects("LESSON Keep monkeys inside (evidence: #3)", "The `id` and `key` fields"), [])
 
     def test_exit_codes(self):
         with tempfile.TemporaryDirectory() as tmp:

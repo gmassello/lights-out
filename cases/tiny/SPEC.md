@@ -42,6 +42,7 @@ One stage. The service lives in `stage-1/` with a `Dockerfile` and a `RUN.md`.
 ## Constraints
 
 - Result repository: `<absolute path, filled at dispatch>`
+- Mandates directory: `<absolute path, filled at dispatch>`
 - Use only the standard library of the language you choose: no third-party packages.
 - `docker build -f stage-1/Dockerfile stage-1/` builds from the folder alone: no `COPY ../`, no
   symlinks, no submodules.

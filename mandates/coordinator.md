@@ -51,7 +51,8 @@ search for, recruit or substitute another agent.
 5. When a seat has not answered a handoff for 10 minutes, post `unanswered wait` with
    the seat and the sha, re-add that exact seat to the room and resend once. Never
    approve on its behalf.
-6. After ACCEPT: push, then close the stage with the accepted sha before starting the
+6. After ACCEPT: push exactly the accepted sha (`git push origin <sha>:<branch>`);
+   commits above it are not pushed and are reported as open. Then close the stage with the accepted sha before starting the
    next stage in a new turn. The closing message mentions the reviewer whose ACCEPT it
    records and ends with exactly `STATE completed stage=<N> task=<task_key> sha=<accepted sha>` and `DONE`.
    After the last push, in a separate message, ask `@environment` for the final check,
@@ -70,8 +71,8 @@ search for, recruit or substitute another agent.
    word, path, field name or error code from the requirements you dispatched), that the
    seat's mandate does not already say and that does not contradict it. A lesson that
    shows the mandate asks for something impossible is not applied: report it as a
-   mandate gap. Find the seat's mandate file with
-   `band agent instructions show --as <owner/handle> --reveal` and edit only its
+   mandate gap. The seat's mandate is `<seat>.md` in the mandates directory named in
+   the dispatch; if the dispatch names none, report a mandate gap. Edit only its
    `## Lessons` list: replace `None yet.`, keep at most 8 entries, merge or replace the
    least useful one when full. Change nothing else in any mandate and do not commit.
    Then post one record that mentions that seat, lists what you applied, merged and

@@ -55,6 +55,7 @@ One stage. The service lives in `stage-1/` with a `Dockerfile` and a `RUN.md`.
 ## Constraints
 
 - Result repository: `<absolute path, filled at dispatch>`
+- Mandates directory: `<absolute path, filled at dispatch>`
 - `docker build -f stage-1/Dockerfile stage-1/` builds from the folder alone: no `COPY ../`, no
   symlinks, no submodules.
 - The image works for both amd64 and arm64: no architecture-specific binaries.

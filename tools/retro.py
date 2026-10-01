@@ -30,8 +30,9 @@ def lessons(messages):
 
 def suspects(lesson, dispatch):
     text = lesson.split(" (evidence:")[0]
-    terms = set(re.findall(r"`([^`]+)`", dispatch)) | set(PATH.findall(dispatch))
-    hits = [t for t in sorted(terms) if t in text]
+    plain = dispatch.replace("```", "")
+    terms = set(re.findall(r"`([^`\n]+)`", plain)) | set(PATH.findall(dispatch))
+    hits = [t for t in sorted(terms) if re.search(rf"(?<!\w){re.escape(t)}(?!\w)", text)]
     hits += [t for t in PATH.findall(text) + IDENT.findall(text) if t not in PROTOCOL and t not in hits]
     return hits
 

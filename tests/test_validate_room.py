@@ -195,5 +195,14 @@ class ValidateRoom(unittest.TestCase):
         self.assertIn("run time 0:05:00 (dispatch to outcome)", out)
 
 
+    def test_final_check_on_an_unaccepted_sha_is_flagged(self):
+        later = self.base + [msg("c", f"@[[e]] final check\nSTATE working task=env-check sha={self.bad}\nNEXT @[[e]]")]
+        _, problems = self.run_room(later)
+        self.assertEqual(problems, [f"message #7 from c: sha {self.bad} of task=env-check is not an accepted sha"])
+        accepted = self.base + [msg("c", f"@[[e]] final check\nSTATE working task=env-check sha={self.good[:7]}\nNEXT @[[e]]")]
+        _, problems = self.run_room(accepted)
+        self.assertEqual(problems, [])
+
+
 if __name__ == "__main__":
     unittest.main()

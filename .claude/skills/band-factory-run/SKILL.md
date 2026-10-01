@@ -54,7 +54,9 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
 
 ## 3. Room y despacho
 
-1. Brief: `cases/<caso>/SPEC.md` con `Result repository:` completado. Se escribe en el scratchpad,
+1. Brief: `cases/<caso>/SPEC.md` con `Result repository:` y `Mandates directory:`
+   (`~/Documents/lights-out/mandates`, absoluto) completados; el coordinator escribe ahí las
+   lecciones de la retro (paso 9). Se escribe en el scratchpad,
    se copia con `pbcopy` y se abre con `open -a TextEdit` para que lo vea. Antes, cerrar en
    TextEdit los briefs de corridas anteriores: pegar uno viejo manda los seats al repo viejo.
    Para ejercitar el REJECT en un caso propio se agrega bajo Constraints una línea de práctica:
@@ -69,7 +71,8 @@ sea el room nuevo. Se confirma porque los transcripts aparecen en
    `band room send <room-id> "@[[<coordinator-id>]] $(cat <brief>)" --mention <coordinator-id>`
    (el id sale de `band room messages` o de `band chat participants`). Anotar la hora UTC.
 4. Apenas despachado, leer el primer mensaje (`band room messages <room-id> --json --type text`)
-   y confirmar que su línea `Result repository:` es `$R`. Si no coincide, parar antes de que un
+   y confirmar que su línea `Result repository:` es `$R` y que `Mandates directory:` es la de
+   este repo. Si no coincide, parar antes de que un
    seat commitee y repetir con un room nuevo.
 5. Arrancar el watchdog en segundo plano (reinicia al seat mencionado que lleva 10 min inactivo
    sin contestar; no escribe en el room y sale solo con el reporte al humano):

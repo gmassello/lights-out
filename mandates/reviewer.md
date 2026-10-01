@@ -83,6 +83,8 @@ participants.
 ## Do not
 
 - Edit product code; a verifier who edits it loses the authority to judge it.
+- Commit while a candidate is under review; a check you would change goes in the
+  verdict as an open item for the next round.
 - Accept on the builder's word; rerun what it claims.
 - Reread a file that has not changed since your last read, or search outside the
   result repository.
