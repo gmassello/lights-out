@@ -46,14 +46,6 @@ band agent create --dry-run --json --session lo-<seat> --name <seat> --cwd $R \
 `band list` tiene que mostrar los cuatro `Connected running=true`: coordinator, builder, reviewer
 y environment.
 
-Después, cada seat arranca sin los settings de usuario:
-`band runtime template set --session lo-<seat> --spawn-arg=--setting-sources --spawn-arg=project,local`.
-Así no carga los hooks personales (`rtk`, `claude-git-guard`), ni plugins como `ponytail`, ni los
-skills de `~/.claude/skills`. Conserva el mandate y `band-peer`, que vive en el `settings.local.json`
-del repo de resultado. El `CLAUDE.md` global se sigue cargando: es memoria de usuario, y la única
-opción que lo saca (`--bare`) no acepta la suscripción. `template show` solo cuenta los argumentos
-(`arguments: 2`); se confirman en el transcript del seat.
-
 Para otra corrida en otro repo, los mismos seats se mudan con
 `band runtime template set --session lo-<seat> --spawn-cwd $R`: rige para las sesiones nuevas, o
 sea el room nuevo. Se confirma porque los transcripts aparecen en
@@ -171,9 +163,10 @@ python3 tools/retro.py --self-check
 |---|---|
 | `band agent create` falla con "requires --session" | pasar `--session lo-<seat>` |
 | `--dry-run` rechaza `--instructions-file` | probar sin él y crear con él |
-| `--claude-context-mode bare` rechaza la suscripción | `local_config` más `--spawn-arg=--setting-sources --spawn-arg=project,local`: sin hooks, plugins ni skills de usuario; el `CLAUDE.md` global sigue cargándose |
+| `--claude-context-mode bare` rechaza la suscripción | `local_config`: el seat hereda `~/.claude` (hooks, CLAUDE.md global) |
+| Se quiere aislar al seat de `~/.claude` con argumentos del runtime (`--setting-sources`, etc.) | BAND solo acepta `--model`, `--fallback-model`, `--max-budget-usd` y `--autocompact` en `--spawn-arg` ("Jam owns the rest of the command line"), y `--model` choca con el modelo que ya fija; un argumento rechazado deja el despacho en buffer sin reintento. Cada room copia los argumentos al crearse: corregir el template no arregla un room ya creado, hay que frenar sus agentes y abrir otro. Los seats quedaron con `--autocompact auto` (el valor por defecto) |
 | Con `local_config` el seat carga Gmail, Drive y demás MCP personales | `--claude-strict-mcp-config`: solo el relay de Jam |
-| El seat no puede commitear: `claude-git-guard` lo niega y le pide al humano un `!` | con `--setting-sources project,local` el guard no corre en el seat; igual: origin en `github.com/gmassello/*`, email personal y la regla de `git -C` en los mandates |
+| El seat no puede commitear: `claude-git-guard` lo niega y le pide al humano un `!` | origin en `github.com/gmassello/*`, email personal y la regla de `git -C` en los mandates |
 | El CLAUDE.md global le impone español al seat | la regla "English only" del bloque común |
 | `band restart` abre otra sesión de Claude Code | el costo del seat suma todas sus sesiones |
 | `band usage` muestra los seats como "(unattributed)" | pasar los ids de sesión explícitos a `measure_cost.py`; con el seat solo, la fila sale `partial: no band session in the window` |
